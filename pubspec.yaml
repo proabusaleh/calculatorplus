@@ -1,0 +1,39 @@
+name: calculatorplus
+description: A premium scientific calculator with 100+ tools across physics, engineering, chemistry, and more.
+version: 2.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  provider: ^6.1.1
+  google_fonts: ^6.1.0
+  shared_preferences: ^2.2.2
+  auto_size_text: ^3.0.0
+  intl: ^0.19.0
+  package_info_plus: ^10.0.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.1
+  flutter_launcher_icons: ^0.14.4
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - assets/images/
+
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: "assets/images/logo.png"
+  min_sdk_version: 26
+  adaptive_icon_background: "#0A0A0C"
+  adaptive_icon_foreground: "assets/images/logo.png"
+  web:
+    generate: true
+    image_path: "assets/images/logo.png"
