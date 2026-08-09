@@ -7,7 +7,6 @@ import '../providers/calculator_provider.dart';
 import '../providers/theme_provider.dart';
 import '../providers/memory_provider.dart';
 import '../theme/app_theme.dart';
-import '../services/app_info.dart';
 import '../widgets/display_panel.dart';
 import '../widgets/basic_keypad.dart';
 import '../widgets/scientific_keypad.dart';
@@ -17,7 +16,11 @@ import 'history_screen.dart';
 
 class CalculatorScreen extends StatefulWidget {
   final int initialMode;
-  const CalculatorScreen({super.key, this.initialMode = 0});
+
+  /// When true, the screen is hosted inside the app shell (no back button).
+  final bool embedded;
+
+  const CalculatorScreen({super.key, this.initialMode = 0, this.embedded = false});
 
   @override
   State<CalculatorScreen> createState() => _CalculatorScreenState();
@@ -36,8 +39,7 @@ class _CalculatorScreenState extends State<CalculatorScreen>
       duration: const Duration(milliseconds: 500),
       vsync: this,
     )..forward();
-    _fadeAnim =
-        CurvedAnimation(parent: _fadeCtrl, curve: Curves.easeInOut);
+    _fadeAnim = CurvedAnimation(parent: _fadeCtrl, curve: Curves.easeInOut);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _focusNode.requestFocus();
       final provider = Provider.of<CalculatorProvider>(context, listen: false);
@@ -57,8 +59,7 @@ class _CalculatorScreenState extends State<CalculatorScreen>
 
   void _handleKeyEvent(RawKeyEvent event) {
     if (event is! RawKeyDownEvent) return;
-    final provider =
-    Provider.of<CalculatorProvider>(context, listen: false);
+    final provider = Provider.of<CalculatorProvider>(context, listen: false);
     final key = event.logicalKey;
 
     if (key == LogicalKeyboardKey.enter || key == LogicalKeyboardKey.numpadEnter) {
@@ -121,10 +122,13 @@ class _CalculatorScreenState extends State<CalculatorScreen>
   }
 
   void _copyResult() {
-    final provider =
-    Provider.of<CalculatorProvider>(context, listen: false);
+    final provider = Provider.of<CalculatorProvider>(context, listen: false);
     final text = provider.getResultForCopy();
     Clipboard.setData(ClipboardData(text: text));
+    _showSnack('Copied: $text');
+  }
+
+  void _showSnack(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Row(
@@ -134,7 +138,7 @@ class _CalculatorScreenState extends State<CalculatorScreen>
             const SizedBox(width: 8),
             Flexible(
               child: Text(
-                'Copied: $text',
+                message,
                 style: GoogleFonts.inter(fontWeight: FontWeight.w500),
                 overflow: TextOverflow.ellipsis,
               ),
@@ -142,9 +146,8 @@ class _CalculatorScreenState extends State<CalculatorScreen>
           ],
         ),
         behavior: SnackBarBehavior.floating,
-        shape:
-        RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        backgroundColor: AppTheme.accentGreen,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        backgroundColor: AppTheme.green,
         duration: const Duration(seconds: 2),
         margin: const EdgeInsets.all(16),
       ),
@@ -160,9 +163,7 @@ class _CalculatorScreenState extends State<CalculatorScreen>
             position: Tween<Offset>(
               begin: const Offset(0, 1),
               end: Offset.zero,
-            ).animate(
-              CurvedAnimation(parent: anim, curve: Curves.easeOutCubic),
-            ),
+            ).animate(CurvedAnimation(parent: anim, curve: Curves.easeOutCubic)),
             child: child,
           );
         },
@@ -192,20 +193,25 @@ class _CalculatorScreenState extends State<CalculatorScreen>
           }
         } else if (result['action'] == 'copy') {
           Clipboard.setData(ClipboardData(text: result['value']));
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Copied: ${result['value']}'),
-              behavior: SnackBarBehavior.floating,
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12)),
-              backgroundColor: AppTheme.accentGreen,
-              duration: const Duration(seconds: 2),
-              margin: const EdgeInsets.all(16),
-            ),
-          );
+          _showSnack('Copied: ${result['value']}');
         }
       }
     });
+  }
+
+  void _openFunctionPicker() {
+    final calc = Provider.of<CalculatorProvider>(context, listen: false);
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (ctx) => _FunctionPickerSheet(
+        onInsert: (value) {
+          calc.onButtonPressed(value);
+          Navigator.pop(ctx);
+        },
+      ),
+    );
   }
 
   @override
@@ -236,6 +242,7 @@ class _CalculatorScreenState extends State<CalculatorScreen>
                       flex: isScientific ? 2 : 3,
                       child: const DisplayPanel(),
                     ),
+                    _buildFunctionRow(isDark),
                     Expanded(
                       flex: isScientific ? 6 : 5,
                       child: AnimatedSwitcher(
@@ -255,8 +262,7 @@ class _CalculatorScreenState extends State<CalculatorScreen>
                           );
                         },
                         child: isScientific
-                            ? const ScientificKeypad(
-                            key: ValueKey('scientific'))
+                            ? const ScientificKeypad(key: ValueKey('scientific'))
                             : const BasicKeypad(key: ValueKey('basic')),
                       ),
                     ),
@@ -272,93 +278,58 @@ class _CalculatorScreenState extends State<CalculatorScreen>
   }
 
   Widget _buildAppBar(bool isDark) {
+    final showBack = !widget.embedded;
+
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Row(
-            children: [
-              Container(
-                width: 34,
-                height: 34,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(9),
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppTheme.primaryOrange.withValues(alpha: 0.3),
-                      blurRadius: 8,
-                      offset: const Offset(0, 3),
-                    ),
-                  ],
+          if (showBack)
+            _IconBtn(
+              icon: Icons.arrow_back_rounded,
+              onTap: () => Navigator.of(context).maybePop(),
+            )
+          else
+            Row(
+              children: [
+                Icon(
+                  Icons.calculate_rounded,
+                  size: 20,
+                  color: AppTheme.electricBlue,
                 ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(9),
-                  child: Image.asset(
-                    'assets/images/logo.png',
-                    width: 34,
-                    height: 34,
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) {
-                      return Container(
-                        decoration: const BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: [
-                              Color(0xFFFF9500),
-                              Color(0xFFFF5E00),
-                            ],
-                          ),
-                        ),
-                        child: const Icon(
-                          Icons.calculate_rounded,
-                          color: Colors.white,
-                          size: 18,
-                        ),
-                      );
-                    },
+                const SizedBox(width: 6),
+                Text(
+                  'Calculator',
+                  style: GoogleFonts.inter(
+                    fontSize: 17,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: -0.2,
+                    color: isDark ? Colors.white : const Color(0xFF1C1C1E),
                   ),
                 ),
+              ],
+            ),
+          if (showBack)
+            Text(
+              'Calculator',
+              style: GoogleFonts.inter(
+                fontSize: 17,
+                fontWeight: FontWeight.w700,
+                letterSpacing: -0.2,
+                color: isDark ? Colors.white : const Color(0xFF1C1C1E),
               ),
-              const SizedBox(width: 10),
-              Text(
-                AppInfo.appName,
-                style: GoogleFonts.inter(
-                  fontSize: 17,
-                  fontWeight: FontWeight.w700,
-                  color: isDark
-                      ? Colors.white
-                      : const Color(0xFF1C1C1E),
-                ),
-              ),
-            ],
-          ),
+            ),
           Row(
             children: [
-              Tooltip(
-                message: 'Copy result (Ctrl+C)',
-                child: _actionBtn(Icons.copy_rounded, _copyResult, isDark),
+              _IconBtn(
+                icon: Icons.history_rounded,
+                onTap: _openHistory,
               ),
-              const SizedBox(width: 4),
-              Tooltip(
-                message: 'History',
-                child: _actionBtn(Icons.history_rounded, _openHistory, isDark),
-              ),
-              const SizedBox(width: 4),
-              Tooltip(
-                message: 'Memory slots',
-                child: _actionBtn(Icons.memory_rounded, _openMemoryManager, isDark),
-              ),
-              const SizedBox(width: 4),
-              Tooltip(
-                message: 'Cycle themes',
-                child: _actionBtn(
-                  isDark
-                      ? Icons.light_mode_rounded
-                      : Icons.dark_mode_rounded,
-                      () => Provider.of<ThemeProvider>(context, listen: false)
-                          .toggleTheme(),
-                  isDark,
-                ),
+              const SizedBox(width: 6),
+              _IconBtn(
+                icon: Icons.more_vert_rounded,
+                onTap: () => _showMoreMenu(),
               ),
             ],
           ),
@@ -367,22 +338,62 @@ class _CalculatorScreenState extends State<CalculatorScreen>
     );
   }
 
-  Widget _actionBtn(IconData icon, VoidCallback onTap, bool isDark) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(8),
-        decoration: BoxDecoration(
-          color: isDark
-              ? Colors.white.withValues(alpha: 0.07)
-              : Colors.black.withValues(alpha: 0.04),
-          borderRadius: BorderRadius.circular(10),
-        ),
-        child: Icon(
-          icon,
-          size: 18,
-          color: isDark ? Colors.white60 : const Color(0xFF636366),
-        ),
+  void _showMoreMenu() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => _MoreSheet(
+        onCopy: () {
+          Navigator.pop(ctx);
+          _copyResult();
+        },
+        onMemory: () {
+          Navigator.pop(ctx);
+          _openMemoryManager();
+        },
+        onTheme: () {
+          Navigator.pop(ctx);
+          Provider.of<ThemeProvider>(context, listen: false).toggleTheme();
+        },
+      ),
+    );
+  }
+
+  Widget _buildFunctionRow(bool isDark) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(12, 4, 12, 4),
+      child: Row(
+        children: [
+          _FunctionBtn(
+            icon: Icons.history_rounded,
+            label: 'History',
+            onTap: _openHistory,
+          ),
+          const SizedBox(width: 8),
+          _FunctionBtn(
+            label: 'fx',
+            onTap: _openFunctionPicker,
+          ),
+          const SizedBox(width: 8),
+          _FunctionBtn(
+            label: '( )',
+            onTap: () => Provider.of<CalculatorProvider>(context, listen: false)
+                .onButtonPressed('('),
+          ),
+          const SizedBox(width: 8),
+          _FunctionBtn(
+            label: '%',
+            onTap: () => Provider.of<CalculatorProvider>(context, listen: false)
+                .onButtonPressed('%'),
+          ),
+          const SizedBox(width: 8),
+          _FunctionBtn(
+            icon: Icons.backspace_outlined,
+            label: 'Delete',
+            onTap: () => Provider.of<CalculatorProvider>(context, listen: false)
+                .onButtonPressed('⌫'),
+          ),
+        ],
       ),
     );
   }
@@ -392,46 +403,46 @@ class _CalculatorScreenState extends State<CalculatorScreen>
       builder: (context, calc, _) {
         final mem = Provider.of<MemoryProvider>(context, listen: false);
         return Padding(
-          padding:
-          const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
           child: Row(
             children: [
-              Tooltip(
-                message: 'Toggle angle unit (DEG/RAD)',
-                child: GestureDetector(
+              GestureDetector(
                 onTap: () => calc.toggleAngleUnit(),
                 child: Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 10, vertical: 4),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
-                    color: AppTheme.primaryBlue.withValues(alpha: 0.15),
+                    gradient: AppTheme.primaryGradient,
                     borderRadius: BorderRadius.circular(8),
+                    boxShadow: AppTheme.glow(AppTheme.electricBlue, radius: 8),
                   ),
                   child: Text(
-                    calc.state.angleUnit == AngleUnit.degrees
-                        ? 'DEG'
-                        : 'RAD',
+                    calc.state.angleUnit == AngleUnit.degrees ? 'DEG' : 'RAD',
                     style: GoogleFonts.inter(
                       fontSize: 11,
                       fontWeight: FontWeight.w700,
-                      color: AppTheme.primaryBlue,
+                      color: Colors.white,
                       letterSpacing: 1,
                     ),
                   ),
                 ),
               ),
-              ),
               const SizedBox(width: 8),
               GestureDetector(
                 onTap: _openMemoryManager,
                 child: Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 10, vertical: 4),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
                     color: mem.hasAnyMemory
-                        ? AppTheme.accentPurple.withValues(alpha: 0.15)
-                        : AppTheme.accentPurple.withValues(alpha: 0.05),
+                        ? AppTheme.purple.withValues(alpha: 0.18)
+                        : AppTheme.purple.withValues(alpha: 0.06),
                     borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: mem.hasAnyMemory
+                          ? AppTheme.purple.withValues(alpha: 0.5)
+                          : Colors.transparent,
+                    ),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
@@ -440,8 +451,8 @@ class _CalculatorScreenState extends State<CalculatorScreen>
                         Icons.memory_rounded,
                         size: 12,
                         color: mem.hasAnyMemory
-                            ? AppTheme.accentPurple
-                            : AppTheme.accentPurple.withValues(alpha: 0.3),
+                            ? AppTheme.purple
+                            : AppTheme.purple.withValues(alpha: 0.3),
                       ),
                       const SizedBox(width: 4),
                       Text(
@@ -452,8 +463,8 @@ class _CalculatorScreenState extends State<CalculatorScreen>
                           fontSize: 11,
                           fontWeight: FontWeight.w700,
                           color: mem.hasAnyMemory
-                              ? AppTheme.accentPurple
-                              : AppTheme.accentPurple.withValues(alpha: 0.3),
+                              ? AppTheme.purple
+                              : AppTheme.purple.withValues(alpha: 0.3),
                         ),
                       ),
                     ],
@@ -461,85 +472,382 @@ class _CalculatorScreenState extends State<CalculatorScreen>
                 ),
               ),
               const Spacer(),
-              Tooltip(
-                message: 'Toggle inverse functions',
-                child: GestureDetector(
-                  onTap: () => calc.toggleInverse(),
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 200),
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 10, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: calc.state.isInverse
-                          ? AppTheme.primaryOrange.withValues(alpha: 0.2)
-                          : Colors.transparent,
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(
-                        color: calc.state.isInverse
-                            ? AppTheme.primaryOrange
-                            : isDark
-                            ? Colors.white.withValues(alpha: 0.12)
-                            : Colors.black.withValues(alpha: 0.12),
-                        width: 1,
-                      ),
-                    ),
-                    child: Text(
-                      'INV',
-                      style: GoogleFonts.inter(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
-                        color: calc.state.isInverse
-                            ? AppTheme.primaryOrange
-                            : isDark
-                            ? Colors.white.withValues(alpha: 0.38)
-                            : Colors.black.withValues(alpha: 0.38),
-                      ),
-                    ),
-                  ),
-                ),
+              _InvHypChip(
+                label: 'INV',
+                active: calc.state.isInverse,
+                activeColor: AppTheme.orange,
+                onTap: () => calc.toggleInverse(),
+                isDark: isDark,
               ),
               const SizedBox(width: 6),
-              Tooltip(
-                message: 'Toggle hyperbolic functions',
-                child: GestureDetector(
-                  onTap: () => calc.toggleHyperbolic(),
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 200),
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 10, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: calc.state.isHyperbolic
-                          ? AppTheme.accentGreen.withValues(alpha: 0.2)
-                          : Colors.transparent,
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(
-                        color: calc.state.isHyperbolic
-                            ? AppTheme.accentGreen
-                            : isDark
-                            ? Colors.white.withValues(alpha: 0.12)
-                            : Colors.black.withValues(alpha: 0.12),
-                        width: 1,
-                      ),
-                    ),
-                    child: Text(
-                      'HYP',
-                      style: GoogleFonts.inter(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
-                        color: calc.state.isHyperbolic
-                            ? AppTheme.accentGreen
-                            : isDark
-                            ? Colors.white.withValues(alpha: 0.38)
-                            : Colors.black.withValues(alpha: 0.38),
-                      ),
-                    ),
-                  ),
-                ),
+              _InvHypChip(
+                label: 'HYP',
+                active: calc.state.isHyperbolic,
+                activeColor: AppTheme.green,
+                onTap: () => calc.toggleHyperbolic(),
+                isDark: isDark,
               ),
             ],
           ),
         );
       },
+    );
+  }
+
+  Widget _IconBtn({required IconData icon, required VoidCallback onTap}) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 38,
+        height: 38,
+        decoration: BoxDecoration(
+          color: isDark
+              ? Colors.white.withValues(alpha: 0.06)
+              : Colors.black.withValues(alpha: 0.04),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: AppTheme.borderColor),
+        ),
+        child: Icon(
+          icon,
+          size: 19,
+          color: isDark ? Colors.white70 : const Color(0xFF636366),
+        ),
+      ),
+    );
+  }
+}
+
+class _InvHypChip extends StatelessWidget {
+  final String label;
+  final bool active;
+  final Color activeColor;
+  final VoidCallback onTap;
+  final bool isDark;
+
+  const _InvHypChip({
+    required this.label,
+    required this.active,
+    required this.activeColor,
+    required this.onTap,
+    required this.isDark,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+        decoration: BoxDecoration(
+          color: active
+              ? activeColor.withValues(alpha: 0.2)
+              : Colors.transparent,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: active
+                ? activeColor
+                : isDark
+                    ? Colors.white.withValues(alpha: 0.12)
+                    : Colors.black.withValues(alpha: 0.12),
+          ),
+        ),
+        child: Text(
+          label,
+          style: GoogleFonts.inter(
+            fontSize: 11,
+            fontWeight: FontWeight.w700,
+            color: active
+                ? activeColor
+                : isDark
+                    ? Colors.white.withValues(alpha: 0.38)
+                    : Colors.black.withValues(alpha: 0.38),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _FunctionBtn extends StatelessWidget {
+  final String label;
+  final IconData? icon;
+  final VoidCallback onTap;
+
+  const _FunctionBtn({required this.label, this.icon, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Expanded(
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          height: 38,
+          decoration: BoxDecoration(
+            color: isDark
+                ? AppTheme.card
+                : Colors.black.withValues(alpha: 0.04),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: AppTheme.borderColor),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              if (icon != null) ...[
+                Icon(
+                  icon,
+                  size: 15,
+                  color: isDark
+                      ? Colors.white60
+                      : const Color(0xFF636366),
+                ),
+                const SizedBox(width: 4),
+              ],
+              Text(
+                label,
+                style: GoogleFonts.inter(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: isDark ? Colors.white70 : const Color(0xFF636366),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _FunctionPickerSheet extends StatelessWidget {
+  final ValueChanged<String> onInsert;
+
+  const _FunctionPickerSheet({required this.onInsert});
+
+  static const _groups = [
+    ('Trigonometry', [
+      ('sin', 'sin'),
+      ('cos', 'cos'),
+      ('tan', 'tan'),
+      ('arcsin', 'asin'),
+      ('arccos', 'acos'),
+      ('arctan', 'atan'),
+    ]),
+    ('Log & Roots', [
+      ('log₁₀', 'log'),
+      ('ln', 'ln'),
+      ('√', '√'),
+      ('∛', '∛'),
+      ('|x|', '|x|'),
+    ]),
+    ('Powers', [
+      ('x²', 'x²'),
+      ('x³', 'x³'),
+      ('xʸ', 'xʸ'),
+      ('1/x', '1/x'),
+      ('x!', 'x!'),
+    ]),
+    ('Constants', [
+      ('π', 'π'),
+      ('e', 'e'),
+      ('10ˣ', '10ˣ'),
+      ('2ˣ', '2ˣ'),
+      ('eˣ', 'eˣ'),
+    ]),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    final bottomPad = MediaQuery.of(context).padding.bottom;
+    return Container(
+      padding: EdgeInsets.fromLTRB(20, 18, 20, bottomPad + 16),
+      decoration: const BoxDecoration(
+        color: AppTheme.surface,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Center(
+            child: Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+          ),
+          const SizedBox(height: 18),
+          Text(
+            'Insert function',
+            style: GoogleFonts.inter(
+              fontSize: 18,
+              fontWeight: FontWeight.w800,
+              color: Colors.white,
+            ),
+          ),
+          const SizedBox(height: 14),
+          Flexible(
+            child: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: _groups.map((g) {
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 14),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          g.$1,
+                          style: GoogleFonts.inter(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 1,
+                            color: AppTheme.electricBlue,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: g.$2.map((f) {
+                            return GestureDetector(
+                              onTap: () => onInsert(f.$2),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 14, vertical: 8),
+                                decoration: BoxDecoration(
+                                  color: AppTheme.card,
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(color: AppTheme.borderColor),
+                                ),
+                                child: Text(
+                                  f.$1,
+                                  style: GoogleFonts.getFont(
+                                    'JetBrains Mono',
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ),
+                            );
+                          }).toList(),
+                        ),
+                      ],
+                    ),
+                  );
+                }).toList(),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MoreSheet extends StatelessWidget {
+  final VoidCallback onCopy;
+  final VoidCallback onMemory;
+  final VoidCallback onTheme;
+
+  const _MoreSheet({
+    required this.onCopy,
+    required this.onMemory,
+    required this.onTheme,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final bottomPad = MediaQuery.of(context).padding.bottom;
+    return Container(
+      padding: EdgeInsets.fromLTRB(16, 18, 16, bottomPad + 16),
+      decoration: const BoxDecoration(
+        color: AppTheme.surface,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Center(
+            child: Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          _MoreItem(
+            icon: Icons.copy_rounded,
+            color: AppTheme.electricBlue,
+            label: 'Copy result',
+            onTap: onCopy,
+          ),
+          _MoreItem(
+            icon: Icons.memory_rounded,
+            color: AppTheme.purple,
+            label: 'Memory slots',
+            onTap: onMemory,
+          ),
+          _MoreItem(
+            icon: Icons.palette_rounded,
+            color: AppTheme.cyan,
+            label: 'Cycle theme',
+            onTap: onTheme,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MoreItem extends StatelessWidget {
+  final IconData icon;
+  final Color color;
+  final String label;
+  final VoidCallback onTap;
+
+  const _MoreItem({
+    required this.icon,
+    required this.color,
+    required this.label,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+      leading: Container(
+        width: 40,
+        height: 40,
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.14),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Icon(icon, size: 20, color: color),
+      ),
+      title: Text(
+        label,
+        style: GoogleFonts.inter(
+          fontSize: 14,
+          fontWeight: FontWeight.w600,
+          color: Colors.white,
+        ),
+      ),
+      trailing: const Icon(
+        Icons.chevron_right_rounded,
+        color: Colors.white38,
+      ),
+      onTap: onTap,
     );
   }
 }

@@ -22,6 +22,10 @@ class _GraphingScreenState extends State<GraphingScreen> {
   double _viewXMin = -10, _viewXMax = 10;
   double _viewYMin = -7, _viewYMax = 7;
 
+  bool _showGrid = true;
+  bool _showAxes = true;
+  double _lineWidth = 2.2;
+
   static const _presetColors = [
     AppTheme.primaryBlue, AppTheme.primaryOrange, AppTheme.accentGreen,
     AppTheme.accentPurple, AppTheme.deepOrange, AppTheme.teal,
@@ -105,6 +109,60 @@ class _GraphingScreenState extends State<GraphingScreen> {
     _updateAnalysis();
   }
 
+  void _zoomFit() {
+    if (_functions.isEmpty) return;
+    HapticService.lightImpact();
+    final analysis =
+        GraphingService.analyze(_functions.first, _viewXMin, _viewXMax);
+    final centerY = (analysis.yMin + analysis.yMax) / 2;
+    final halfH = max((analysis.yMax - analysis.yMin) / 2 * 1.3, 3.0);
+    setState(() {
+      _viewYMin = centerY - halfH;
+      _viewYMax = centerY + halfH;
+    });
+    _updateAnalysis();
+  }
+
+  void _openSettings() {
+    HapticService.selectionClick();
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (_) => _GraphSettingsSheet(
+        showGrid: _showGrid,
+        showAxes: _showAxes,
+        lineWidth: _lineWidth,
+        functionColor: _functions.isEmpty ? AppTheme.electricBlue : _functions.first.color,
+        onShowGrid: (v) => setState(() => _showGrid = v),
+        onShowAxes: (v) => setState(() => _showAxes = v),
+        onLineWidth: (v) => setState(() => _lineWidth = v),
+        onCycleColor: () {
+          if (_functions.isNotEmpty) {
+            final idx = _presetColors.indexOf(_functions.first.color);
+            final next = (idx + 1) % _presetColors.length;
+            final updated = GraphFunction(
+              _functions.first.expression,
+              color: _presetColors[next],
+            );
+            setState(() => _functions[0] = updated);
+          }
+        },
+      ),
+    );
+  }
+
+  void _cycleFirstFunctionColor() {
+    if (_functions.isEmpty) return;
+    final idx = _presetColors.indexOf(_functions.first.color);
+    final next = (idx + 1) % _presetColors.length;
+    setState(() {
+      _functions[0] = GraphFunction(
+        _functions.first.expression,
+        color: _presetColors[next],
+      );
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -112,15 +170,22 @@ class _GraphingScreenState extends State<GraphingScreen> {
     return DefaultTabController(
       length: 2,
       child: Scaffold(
-        backgroundColor: isDark ? AppTheme.darkBg : AppTheme.lightBg,
+        backgroundColor: AppTheme.bg,
         appBar: AppBar(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          automaticallyImplyLeading: false,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 20),
+            onPressed: () => Navigator.pop(context),
+          ),
           title: Text('Graphing',
-              style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
+              style: GoogleFonts.inter(fontWeight: FontWeight.w800)),
           bottom: TabBar(
-            labelColor: AppTheme.primaryBlue,
+            labelColor: AppTheme.electricBlue,
             unselectedLabelColor: isDark ? Colors.white54 : Colors.black45,
-            indicatorColor: AppTheme.primaryBlue,
-            labelStyle: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 13),
+            indicatorColor: AppTheme.electricBlue,
+            labelStyle: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 13),
             unselectedLabelStyle: GoogleFonts.inter(fontSize: 13),
             tabs: const [
               Tab(text: 'Plot'),
@@ -208,29 +273,20 @@ class _GraphingScreenState extends State<GraphingScreen> {
                 viewXMax: _viewXMax,
                 viewYMin: _viewYMin,
                 viewYMax: _viewYMax,
+                showGrid: _showGrid,
+                showAxes: _showAxes,
+                lineWidth: _lineWidth,
                 isDark: isDark,
               ),
               Positioned(
-                right: 12,
-                bottom: 12,
-                child: Column(
-                  children: [
-                    _floatBtn(Icons.add_rounded, _zoomIn, isDark),
-                    const SizedBox(height: 6),
-                    _floatBtn(Icons.remove_rounded, _zoomOut, isDark),
-                    const SizedBox(height: 6),
-                    _floatBtn(Icons.center_focus_strong_rounded, _resetView, isDark),
-                  ],
-                ),
-              ),
-              Positioned(
                 left: 12,
-                bottom: 12,
+                top: 10,
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                   decoration: BoxDecoration(
-                    color: (isDark ? Colors.black : Colors.white).withValues(alpha: 0.8),
-                    borderRadius: BorderRadius.circular(8),
+                    color: AppTheme.surface.withValues(alpha: 0.85),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: AppTheme.borderColor),
                   ),
                   child: Text(
                     'x: [${_viewXMin.toStringAsFixed(1)}, ${_viewXMax.toStringAsFixed(1)}]  '
@@ -244,7 +300,96 @@ class _GraphingScreenState extends State<GraphingScreen> {
             ],
           ),
         ),
+        _buildControlBar(isDark),
       ],
+    );
+  }
+
+  Widget _buildControlBar(bool isDark) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(16, 10, 16, 12),
+      decoration: BoxDecoration(
+        color: AppTheme.surface,
+        border: Border(
+          top: BorderSide(color: Colors.white.withValues(alpha: 0.06)),
+        ),
+      ),
+      child: Row(
+        children: [
+          _ControlBtn(label: 'Zoom', icon: Icons.add_rounded, onTap: _zoomIn),
+          const SizedBox(width: 8),
+          _ControlBtn(label: 'Out', icon: Icons.remove_rounded, onTap: _zoomOut),
+          const SizedBox(width: 8),
+          _ControlBtn(label: 'Fit', icon: Icons.center_focus_strong_rounded, onTap: _zoomFit),
+          const SizedBox(width: 8),
+          _ControlBtn(label: 'Reset', icon: Icons.restart_alt_rounded, onTap: _resetView),
+          const SizedBox(width: 8),
+          Expanded(
+            child: GestureDetector(
+              onTap: _openSettings,
+              child: Container(
+                height: 42,
+                decoration: BoxDecoration(
+                  gradient: AppTheme.primaryGradient,
+                  borderRadius: BorderRadius.circular(14),
+                  boxShadow: AppTheme.glow(AppTheme.electricBlue, radius: 12),
+                ),
+                child: const Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.tune_rounded, size: 16, color: Colors.white),
+                    SizedBox(width: 6),
+                    Text(
+                      'Settings',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        fontFamily: 'Inter',
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _ControlBtn({
+    required String label,
+    required IconData icon,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 56,
+        height: 42,
+        decoration: BoxDecoration(
+          color: AppTheme.card,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: AppTheme.borderColor),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, size: 15, color: AppTheme.electricBlue),
+            const SizedBox(height: 2),
+            Text(
+              label,
+              style: const TextStyle(
+                fontSize: 9,
+                fontWeight: FontWeight.w600,
+                color: Colors.white70,
+                fontFamily: 'Inter',
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -468,22 +613,205 @@ class _GraphingScreenState extends State<GraphingScreen> {
       ),
     );
   }
+}
 
-  Widget _floatBtn(IconData icon, VoidCallback onTap, bool isDark) {
-    return Material(
-      color: (isDark ? AppTheme.darkCard : Colors.white).withValues(alpha: 0.9),
-      borderRadius: BorderRadius.circular(10),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(10),
-        onTap: onTap,
-        child: SizedBox(
-          width: 40,
-          height: 40,
-          child: Icon(icon,
-              size: 20,
-              color: isDark ? Colors.white70 : Colors.black54),
-        ),
+class _GraphSettingsSheet extends StatefulWidget {
+  final bool showGrid;
+  final bool showAxes;
+  final double lineWidth;
+  final Color functionColor;
+  final ValueChanged<bool> onShowGrid;
+  final ValueChanged<bool> onShowAxes;
+  final ValueChanged<double> onLineWidth;
+  final VoidCallback onCycleColor;
+
+  const _GraphSettingsSheet({
+    required this.showGrid,
+    required this.showAxes,
+    required this.lineWidth,
+    required this.functionColor,
+    required this.onShowGrid,
+    required this.onShowAxes,
+    required this.onLineWidth,
+    required this.onCycleColor,
+  });
+
+  @override
+  State<_GraphSettingsSheet> createState() => _GraphSettingsSheetState();
+}
+
+class _GraphSettingsSheetState extends State<_GraphSettingsSheet> {
+  late bool _grid = widget.showGrid;
+  late bool _axes = widget.showAxes;
+  late double _width = widget.lineWidth;
+
+  @override
+  Widget build(BuildContext context) {
+    final bottomPad = MediaQuery.of(context).padding.bottom;
+    return Container(
+      padding: EdgeInsets.fromLTRB(20, 18, 20, bottomPad + 16),
+      decoration: const BoxDecoration(
+        color: AppTheme.surface,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Center(
+            child: Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+          ),
+          const SizedBox(height: 18),
+          Text(
+            'Graph Settings',
+            style: GoogleFonts.inter(
+              fontSize: 18,
+              fontWeight: FontWeight.w800,
+              color: Colors.white,
+            ),
+          ),
+          const SizedBox(height: 12),
+          _settingsCard(context),
+        ],
+      ),
+    );
+  }
+
+  Widget _settingsCard(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: AppTheme.card,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: AppTheme.borderColor),
+      ),
+      child: Column(
+        children: [
+          SwitchListTile(
+            value: _grid,
+            activeTrackColor: AppTheme.electricBlue,
+            title: _rowLabel('Grid', Icons.grid_4x4_rounded),
+            onChanged: (v) {
+              setState(() => _grid = v);
+              widget.onShowGrid(v);
+            },
+          ),
+          Divider(
+            height: 1,
+            color: Colors.white.withValues(alpha: 0.06),
+          ),
+          SwitchListTile(
+            value: _axes,
+            activeTrackColor: AppTheme.electricBlue,
+            title: _rowLabel('Axes', Icons.horizontal_rule_rounded),
+            onChanged: (v) {
+              setState(() => _axes = v);
+              widget.onShowAxes(v);
+            },
+          ),
+          Divider(
+            height: 1,
+            color: Colors.white.withValues(alpha: 0.06),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _rowLabel('Line thickness', Icons.line_weight_rounded),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Slider(
+                        value: _width,
+                        min: 1,
+                        max: 5,
+                        activeColor: AppTheme.electricBlue,
+                        inactiveColor: Colors.white.withValues(alpha: 0.1),
+                        onChanged: (v) {
+                          setState(() => _width = v);
+                          widget.onLineWidth(v);
+                        },
+                      ),
+                    ),
+                    SizedBox(
+                      width: 40,
+                      child: Text(
+                        _width.toStringAsFixed(1),
+                        style: GoogleFonts.jetBrainsMono(
+                          fontSize: 12,
+                          color: Colors.white70,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          Divider(
+            height: 1,
+            color: Colors.white.withValues(alpha: 0.06),
+          ),
+          ListTile(
+            leading: Container(
+              width: 34,
+              height: 34,
+              decoration: BoxDecoration(
+                color: widget.functionColor.withValues(alpha: 0.16),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(
+                Icons.palette_rounded,
+                size: 18,
+                color: widget.functionColor,
+              ),
+            ),
+            title: _rowLabel('Function color', Icons.show_chart_rounded),
+            subtitle: Text(
+              'Tap to cycle the active curve color',
+              style: GoogleFonts.inter(
+                fontSize: 12,
+                color: Colors.white38,
+              ),
+            ),
+            trailing: GestureDetector(
+              onTap: widget.onCycleColor,
+              child: Container(
+                width: 30,
+                height: 30,
+                decoration: BoxDecoration(
+                  color: widget.functionColor,
+                  shape: BoxShape.circle,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _rowLabel(String text, IconData icon) {
+    return Row(
+      children: [
+        Icon(icon, size: 18, color: Colors.white54),
+        const SizedBox(width: 10),
+        Text(
+          text,
+          style: GoogleFonts.inter(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            color: Colors.white,
+          ),
+        ),
+      ],
     );
   }
 }
@@ -496,6 +824,8 @@ class _PointInfo {
 class _GraphCanvas extends StatelessWidget {
   final List<GraphFunction> functions;
   final double viewXMin, viewXMax, viewYMin, viewYMax;
+  final bool showGrid, showAxes;
+  final double lineWidth;
   final bool isDark;
 
   const _GraphCanvas({
@@ -504,6 +834,9 @@ class _GraphCanvas extends StatelessWidget {
     required this.viewXMax,
     required this.viewYMin,
     required this.viewYMax,
+    required this.showGrid,
+    required this.showAxes,
+    required this.lineWidth,
     required this.isDark,
   });
 
@@ -523,6 +856,9 @@ class _GraphCanvas extends StatelessWidget {
             viewXMax: viewXMax,
             viewYMin: viewYMin,
             viewYMax: viewYMax,
+            showGrid: showGrid,
+            showAxes: showAxes,
+            lineWidth: lineWidth,
             isDark: isDark,
           ),
         );
@@ -534,6 +870,8 @@ class _GraphCanvas extends StatelessWidget {
 class _GridPainter extends CustomPainter {
   final List<GraphFunction> functions;
   final double viewXMin, viewXMax, viewYMin, viewYMax;
+  final bool showGrid, showAxes;
+  final double lineWidth;
   final bool isDark;
 
   _GridPainter({
@@ -542,6 +880,9 @@ class _GridPainter extends CustomPainter {
     required this.viewXMax,
     required this.viewYMin,
     required this.viewYMax,
+    required this.showGrid,
+    required this.showAxes,
+    required this.lineWidth,
     required this.isDark,
   });
 
@@ -553,8 +894,8 @@ class _GridPainter extends CustomPainter {
     final w = size.width;
     final h = size.height;
 
-    _drawGrid(canvas, w, h);
-    _drawAxes(canvas, w, h);
+    if (showGrid) _drawGrid(canvas, w, h);
+    if (showAxes) _drawAxes(canvas, w, h);
 
     for (final func in functions) {
       if (!func.visible) continue;
@@ -652,7 +993,7 @@ class _GridPainter extends CustomPainter {
   void _drawFunction(Canvas canvas, GraphFunction func, double w, double h) {
     final paint = Paint()
       ..color = func.color
-      ..strokeWidth = 2.2
+      ..strokeWidth = lineWidth
       ..style = PaintingStyle.stroke
       ..strokeCap = StrokeCap.round
       ..strokeJoin = StrokeJoin.round;
@@ -703,5 +1044,7 @@ class _GridPainter extends CustomPainter {
   bool shouldRepaint(covariant _GridPainter old) =>
       viewXMin != old.viewXMin || viewXMax != old.viewXMax ||
       viewYMin != old.viewYMin || viewYMax != old.viewYMax ||
+      showGrid != old.showGrid || showAxes != old.showAxes ||
+      lineWidth != old.lineWidth ||
       functions.length != old.functions.length;
 }

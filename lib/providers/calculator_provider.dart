@@ -19,6 +19,11 @@ class CalculatorProvider extends ChangeNotifier {
   List<Calculation> _history = [];
   List<Calculation> get history => List.unmodifiable(_history);
 
+  List<Calculation> get bookmarked =>
+      List.unmodifiable(_history.where((c) => c.isBookmarked));
+
+  bool get hasFavorites => _history.any((c) => c.isBookmarked);
+
   bool _animateResult = false;
   bool get animateResult => _animateResult;
 

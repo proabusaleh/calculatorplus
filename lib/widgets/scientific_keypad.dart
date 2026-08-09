@@ -43,7 +43,7 @@ class ScientificKeypad extends StatelessWidget {
                   _mem('MR', calc),
                   _mem('M+', calc),
                   _mem('M-', calc),
-                  _fn('AC', calc),
+                  _fn('AC', calc, CalcButtonType.clear),
                   _fn('⌫', calc),
                 ]),
                 _row([
@@ -143,13 +143,14 @@ class ScientificKeypad extends StatelessWidget {
     ),
   );
 
-  Widget _fn(String label, CalculatorProvider calc) => Expanded(
-    child: CalculatorButton(
-      label: label,
-      type: CalcButtonType.function_,
-      onTap: () => calc.onButtonPressed(label),
-    ),
-  );
+  Widget _fn(String label, CalculatorProvider calc,
+      [CalcButtonType type = CalcButtonType.function_]) => Expanded(
+        child: CalculatorButton(
+          label: label,
+          type: type,
+          onTap: () => calc.onButtonPressed(label),
+        ),
+      );
 
   Widget _sci(String label, CalculatorProvider calc,
       {String? actual}) =>

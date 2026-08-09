@@ -16,7 +16,7 @@ class BasicKeypad extends StatelessWidget {
         child: Column(
           children: [
             _row([
-              _btn('AC', CalcButtonType.function_, calc),
+              _btn('AC', CalcButtonType.clear, calc),
               _btn('⌫', CalcButtonType.function_, calc),
               _btn('%', CalcButtonType.function_, calc),
               _btn('÷', CalcButtonType.operator, calc),

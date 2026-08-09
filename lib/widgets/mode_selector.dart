@@ -77,20 +77,16 @@ class ModeSelector extends StatelessWidget {
           curve: Curves.easeInOut,
           margin: const EdgeInsets.all(3),
           decoration: BoxDecoration(
-            gradient: isActive
-                ? const LinearGradient(
-              colors: [Color(0xFFFF9500), Color(0xFFFF5E00)],
-            )
-                : null,
+            gradient: isActive ? AppTheme.primaryGradient : null,
             borderRadius: BorderRadius.circular(10),
             boxShadow: isActive
                 ? [
-              BoxShadow(
-                color: AppTheme.primaryOrange.withValues(alpha: 0.25),
-                blurRadius: 8,
-                offset: const Offset(0, 2),
-              ),
-            ]
+                    BoxShadow(
+                      color: AppTheme.electricBlue.withValues(alpha: 0.3),
+                      blurRadius: 10,
+                      offset: const Offset(0, 3),
+                    ),
+                  ]
                 : null,
           ),
           child: Row(

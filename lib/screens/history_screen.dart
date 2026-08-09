@@ -4,12 +4,21 @@ import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../providers/calculator_provider.dart';
 import '../models/calculation.dart';
+import '../theme/app_theme.dart';
 import '../widgets/history_tile.dart';
+import '../widgets/search_field.dart';
 
-enum HistoryFilter { all, bookmarked, scientific, basic }
+enum HistoryFilter { all, today, yesterday, thisWeek }
 
 class HistoryScreen extends StatefulWidget {
-  const HistoryScreen({super.key});
+  final bool embedded;
+  final void Function(Calculation calc)? onRecalculate;
+
+  const HistoryScreen({
+    super.key,
+    this.embedded = false,
+    this.onRecalculate,
+  });
 
   @override
   State<HistoryScreen> createState() => _HistoryScreenState();
@@ -20,6 +29,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
   HistoryFilter _filter = HistoryFilter.all;
   String _searchQuery = '';
   bool _selectionMode = false;
+  bool _showSearch = true;
   final Set<int> _selectedIndices = {};
 
   @override
@@ -28,18 +38,37 @@ class _HistoryScreenState extends State<HistoryScreen> {
     super.dispose();
   }
 
+  bool _isToday(DateTime d) {
+    final now = DateTime.now();
+    return d.year == now.year && d.month == now.month && d.day == now.day;
+  }
+
+  bool _isYesterday(DateTime d) {
+    final now = DateTime.now();
+    final y = DateTime(now.year, now.month, now.day)
+        .subtract(const Duration(days: 1));
+    return d.year == y.year && d.month == y.month && d.day == y.day;
+  }
+
+  bool _isThisWeek(DateTime d) {
+    final now = DateTime.now();
+    final start = DateTime(now.year, now.month, now.day)
+        .subtract(const Duration(days: 6));
+    return d.isAfter(start.subtract(const Duration(milliseconds: 1)));
+  }
+
   List<Calculation> _filteredList(List<Calculation> all) {
     List<Calculation> list = all;
 
     switch (_filter) {
-      case HistoryFilter.bookmarked:
-        list = list.where((c) => c.isBookmarked).toList();
+      case HistoryFilter.today:
+        list = list.where((c) => _isToday(c.timestamp)).toList();
         break;
-      case HistoryFilter.scientific:
-        list = list.where((c) => c.isScientific).toList();
+      case HistoryFilter.yesterday:
+        list = list.where((c) => _isYesterday(c.timestamp)).toList();
         break;
-      case HistoryFilter.basic:
-        list = list.where((c) => !c.isScientific).toList();
+      case HistoryFilter.thisWeek:
+        list = list.where((c) => _isThisWeek(c.timestamp)).toList();
         break;
       case HistoryFilter.all:
         break;
@@ -61,27 +90,30 @@ class _HistoryScreenState extends State<HistoryScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        automaticallyImplyLeading: false,
+        leading: widget.embedded
+            ? null
+            : IconButton(
+                icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 20),
+                onPressed: () => Navigator.pop(context),
+              ),
         title: _selectionMode
             ? Text(
                 '${_selectedIndices.length} selected',
-                style: GoogleFonts.inter(fontWeight: FontWeight.w600),
+                style: GoogleFonts.inter(fontWeight: FontWeight.w700),
               )
             : Text(
                 'History',
-                style: GoogleFonts.inter(fontWeight: FontWeight.w600),
+                style: GoogleFonts.inter(
+                  fontWeight: FontWeight.w800,
+                  fontSize: 20,
+                  letterSpacing: -0.3,
+                ),
               ),
-        leading: IconButton(
-          icon: Icon(
-            _selectionMode ? Icons.close_rounded : Icons.arrow_back_ios_rounded,
-          ),
-          onPressed: _selectionMode
-              ? () => setState(() {
-                    _selectionMode = false;
-                    _selectedIndices.clear();
-                  })
-              : () => Navigator.pop(context),
-        ),
         actions: [
           if (_selectionMode) ...[
             Consumer<CalculatorProvider>(
@@ -95,7 +127,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                     allSelected
                         ? Icons.deselect_rounded
                         : Icons.select_all_rounded,
-                    size: 22,
+                    size: 21,
                   ),
                   tooltip: allSelected ? 'Deselect all' : 'Select all',
                   onPressed: () {
@@ -113,64 +145,34 @@ class _HistoryScreenState extends State<HistoryScreen> {
               },
             ),
             IconButton(
-              icon: const Icon(Icons.delete_outline_rounded, size: 22),
+              icon: const Icon(Icons.delete_outline_rounded, size: 21),
               tooltip: 'Delete selected',
               onPressed: _selectedIndices.isEmpty
                   ? null
                   : () => _deleteSelected(context),
             ),
           ] else ...[
+            IconButton(
+              icon: Icon(
+                _showSearch ? Icons.close_rounded : Icons.search_rounded,
+                size: 21,
+              ),
+              tooltip: 'Search',
+              onPressed: () => setState(() {
+                _showSearch = !_showSearch;
+                if (!_showSearch) {
+                  _searchCtrl.clear();
+                  _searchQuery = '';
+                }
+              }),
+            ),
             Consumer<CalculatorProvider>(
               builder: (context, p, _) {
                 if (p.history.isEmpty) return const SizedBox.shrink();
-                return PopupMenuButton<String>(
-                  icon: const Icon(Icons.more_vert_rounded, size: 22),
-                  onSelected: (v) {
-                    if (v == 'clear') {
-                      _showClearDialog(context, p);
-                    } else if (v == 'select') {
-                      setState(() => _selectionMode = true);
-                    } else if (v == 'export') {
-                      _exportHistory(context, p);
-                    }
-                  },
-                  itemBuilder: (_) => [
-                    PopupMenuItem(
-                      value: 'export',
-                      child: Row(
-                        children: [
-                          const Icon(Icons.ios_share_rounded, size: 18),
-                          const SizedBox(width: 10),
-                          Text('Export',
-                              style: GoogleFonts.inter(fontSize: 14)),
-                        ],
-                      ),
-                    ),
-                    PopupMenuItem(
-                      value: 'select',
-                      child: Row(
-                        children: [
-                          const Icon(Icons.checklist_rounded, size: 18),
-                          const SizedBox(width: 10),
-                          Text('Select',
-                              style: GoogleFonts.inter(fontSize: 14)),
-                        ],
-                      ),
-                    ),
-                    PopupMenuItem(
-                      value: 'clear',
-                      child: Row(
-                        children: [
-                          const Icon(Icons.delete_outline_rounded,
-                              size: 18, color: Colors.red),
-                          const SizedBox(width: 10),
-                          Text('Clear All',
-                              style: GoogleFonts.inter(
-                                  fontSize: 14, color: Colors.red)),
-                        ],
-                      ),
-                    ),
-                  ],
+                return IconButton(
+                  icon: const Icon(Icons.delete_sweep_outlined, size: 21),
+                  tooltip: 'Delete all',
+                  onPressed: () => _showClearDialog(context, p),
                 );
               },
             ),
@@ -179,11 +181,16 @@ class _HistoryScreenState extends State<HistoryScreen> {
       ),
       body: Column(
         children: [
-          // Search bar
-          _buildSearchBar(isDark),
-          // Filter chips
+          if (_showSearch)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
+              child: SearchField(
+                controller: _searchCtrl,
+                hintText: 'Search calculations...',
+                onChanged: (v) => setState(() => _searchQuery = v),
+              ),
+            ),
           _buildFilterChips(isDark),
-          // History list
           Expanded(
             child: Consumer<CalculatorProvider>(
               builder: (context, p, _) {
@@ -193,7 +200,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                   return _buildEmptyState(isDark);
                 }
 
-                if (filtered.isEmpty && _searchQuery.isNotEmpty) {
+                if (filtered.isEmpty) {
                   return _buildNoResults(isDark);
                 }
 
@@ -212,8 +219,13 @@ class _HistoryScreenState extends State<HistoryScreen> {
                       onTap: _selectionMode
                           ? () => _toggleSelection(i)
                           : () {
-                              p.reuseCalculation(filtered[i]);
-                              Navigator.pop(context);
+                              if (widget.embedded &&
+                                  widget.onRecalculate != null) {
+                                widget.onRecalculate!(filtered[i]);
+                              } else {
+                                p.reuseCalculation(filtered[i]);
+                                Navigator.pop(context);
+                              }
                             },
                       onLongPress: () {
                         if (!_selectionMode) {
@@ -223,6 +235,12 @@ class _HistoryScreenState extends State<HistoryScreen> {
                       },
                       onBookmark: () => p.toggleBookmark(origIndex),
                       onDismiss: () => p.deleteHistoryItem(origIndex),
+                      onCopy: () {
+                        Clipboard.setData(
+                          ClipboardData(text: filtered[i].result),
+                        );
+                        _copyFeedback(context, filtered[i].result);
+                      },
                     );
                   },
                 );
@@ -234,89 +252,78 @@ class _HistoryScreenState extends State<HistoryScreen> {
     );
   }
 
-  Widget _buildSearchBar(bool isDark) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-      child: TextField(
-        controller: _searchCtrl,
-        onChanged: (v) => setState(() => _searchQuery = v),
-        style: GoogleFonts.inter(fontSize: 15),
-        decoration: InputDecoration(
-          hintText: 'Search calculations...',
-          hintStyle: GoogleFonts.inter(
-            color: isDark ? Colors.white38 : Colors.black38,
-          ),
-          prefixIcon: Icon(
-            Icons.search_rounded,
-            size: 20,
-            color: isDark ? Colors.white38 : Colors.black38,
-          ),
-          suffixIcon: _searchQuery.isNotEmpty
-              ? IconButton(
-                  icon: const Icon(Icons.clear_rounded, size: 18),
-                  onPressed: () {
-                    _searchCtrl.clear();
-                    setState(() => _searchQuery = '');
-                  },
-                )
-              : null,
-          filled: true,
-          fillColor: isDark
-              ? Colors.white.withValues(alpha:0.06)
-              : Colors.black.withValues(alpha:0.04),
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide.none,
-          ),
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+  void _copyFeedback(BuildContext context, String text) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            const Icon(Icons.check_circle_rounded,
+                color: Colors.white, size: 18),
+            const SizedBox(width: 8),
+            Flexible(
+              child: Text(
+                'Copied: $text',
+                style: GoogleFonts.inter(fontWeight: FontWeight.w500),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
         ),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        backgroundColor: AppTheme.green,
+        duration: const Duration(seconds: 2),
+        margin: const EdgeInsets.all(16),
       ),
     );
   }
 
   Widget _buildFilterChips(bool isDark) {
+    final labels = const {
+      HistoryFilter.all: 'All',
+      HistoryFilter.today: 'Today',
+      HistoryFilter.yesterday: 'Yesterday',
+      HistoryFilter.thisWeek: 'This Week',
+    };
+
     return SizedBox(
-      height: 48,
+      height: 50,
       child: ListView(
         scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         children: HistoryFilter.values.map((f) {
           final isActive = _filter == f;
-          final label = f == HistoryFilter.all
-              ? 'All'
-              : f == HistoryFilter.bookmarked
-                  ? 'Starred'
-                  : f == HistoryFilter.scientific
-                      ? 'Scientific'
-                      : 'Basic';
           return Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 4),
+            padding: const EdgeInsets.only(right: 8),
             child: GestureDetector(
               onTap: () => setState(() => _filter = f),
               child: AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                duration: const Duration(milliseconds: 220),
+                curve: Curves.easeOut,
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 decoration: BoxDecoration(
+                  gradient: isActive ? AppTheme.primaryGradient : null,
                   color: isActive
-                      ? const Color(0xFFFF9500).withValues(alpha:0.15)
+                      ? null
                       : isDark
-                          ? Colors.white.withValues(alpha:0.06)
-                          : Colors.black.withValues(alpha:0.04),
+                          ? Colors.white.withValues(alpha: 0.05)
+                          : Colors.black.withValues(alpha: 0.04),
                   borderRadius: BorderRadius.circular(20),
                   border: Border.all(
-                    color: isActive
-                        ? const Color(0xFFFF9500)
-                        : Colors.transparent,
-                    width: 1,
+                    color: isActive ? Colors.transparent : AppTheme.borderColor,
                   ),
+                  boxShadow: isActive
+                      ? AppTheme.glow(AppTheme.electricBlue, radius: 12)
+                      : null,
                 ),
                 child: Text(
-                  label,
+                  labels[f]!,
                   style: GoogleFonts.inter(
                     fontSize: 13,
-                    fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
+                    fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
                     color: isActive
-                        ? const Color(0xFFFF9500)
+                        ? Colors.white
                         : isDark
                             ? Colors.white54
                             : Colors.black54,
@@ -335,32 +342,42 @@ class _HistoryScreenState extends State<HistoryScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
-            Icons.history_rounded,
-            size: 80,
-            color: isDark
-                ? Colors.white.withValues(alpha:0.1)
-                : Colors.black.withValues(alpha:0.1),
+          Container(
+            width: 88,
+            height: 88,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  AppTheme.electricBlue.withValues(alpha: 0.16),
+                  AppTheme.purple.withValues(alpha: 0.1),
+                ],
+              ),
+              borderRadius: BorderRadius.circular(26),
+              border: Border.all(color: AppTheme.borderColor),
+            ),
+            child: Icon(
+              Icons.history_rounded,
+              size: 40,
+              color: AppTheme.electricBlue.withValues(alpha: 0.8),
+            ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 20),
           Text(
             'No calculations yet',
             style: GoogleFonts.inter(
               fontSize: 18,
-              fontWeight: FontWeight.w500,
-              color: isDark
-                  ? Colors.white.withValues(alpha:0.3)
-                  : Colors.black.withValues(alpha:0.3),
+              fontWeight: FontWeight.w700,
+              color: isDark ? Colors.white : const Color(0xFF1C1C1E),
             ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 6),
           Text(
-            'History will appear here',
+            'Your calculation history will appear here',
             style: GoogleFonts.inter(
-              fontSize: 14,
-              color: isDark
-                  ? Colors.white.withValues(alpha:0.2)
-                  : Colors.black.withValues(alpha:0.2),
+              fontSize: 13,
+              color: isDark ? Colors.white38 : Colors.black45,
             ),
           ),
         ],
@@ -375,20 +392,18 @@ class _HistoryScreenState extends State<HistoryScreen> {
         children: [
           Icon(
             Icons.search_off_rounded,
-            size: 64,
+            size: 56,
             color: isDark
-                ? Colors.white.withValues(alpha:0.1)
-                : Colors.black.withValues(alpha:0.1),
+                ? Colors.white.withValues(alpha: 0.12)
+                : Colors.black.withValues(alpha: 0.12),
           ),
           const SizedBox(height: 16),
           Text(
             'No results found',
             style: GoogleFonts.inter(
               fontSize: 16,
-              fontWeight: FontWeight.w500,
-              color: isDark
-                  ? Colors.white.withValues(alpha:0.3)
-                  : Colors.black.withValues(alpha:0.3),
+              fontWeight: FontWeight.w600,
+              color: isDark ? Colors.white54 : Colors.black54,
             ),
           ),
         ],
@@ -416,9 +431,10 @@ class _HistoryScreenState extends State<HistoryScreen> {
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        backgroundColor: AppTheme.surface,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Text('Delete ${toDelete.length} items?',
-            style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
+            style: GoogleFonts.inter(fontWeight: FontWeight.w700)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
@@ -436,7 +452,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
               });
               Navigator.pop(context);
             },
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            style: TextButton.styleFrom(foregroundColor: AppTheme.red),
             child: Text('Delete',
                 style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
           ),
@@ -449,53 +465,28 @@ class _HistoryScreenState extends State<HistoryScreen> {
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        backgroundColor: AppTheme.surface,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Text('Clear History',
-            style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
+            style: GoogleFonts.inter(fontWeight: FontWeight.w700)),
         content: Text('Delete all calculation history?',
             style: GoogleFonts.inter()),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text('Cancel', style: GoogleFonts.inter(fontWeight: FontWeight.w500)),
+            child:
+                Text('Cancel', style: GoogleFonts.inter(fontWeight: FontWeight.w500)),
           ),
           TextButton(
             onPressed: () {
               p.clearHistory();
               Navigator.pop(context);
             },
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            style: TextButton.styleFrom(foregroundColor: AppTheme.red),
             child: Text('Clear',
                 style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
           ),
         ],
-      ),
-    );
-  }
-
-  void _exportHistory(BuildContext context, CalculatorProvider p) {
-    final buffer = StringBuffer();
-    buffer.writeln('Calculator+ History Export');
-    buffer.writeln('Date: ${DateTime.now()}');
-    buffer.writeln('---');
-    for (final c in p.history) {
-      buffer.writeln('${c.formattedDate} ${c.formattedTime}');
-      buffer.writeln('  ${c.expression} = ${c.result}');
-      if (c.isBookmarked) buffer.writeln('  [Starred]');
-      buffer.writeln('');
-    }
-    Clipboard.setData(ClipboardData(text: buffer.toString()));
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          'History copied to clipboard (${p.history.length} entries)',
-          style: GoogleFonts.inter(fontWeight: FontWeight.w500),
-        ),
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        backgroundColor: const Color(0xFF34C759),
-        duration: const Duration(seconds: 2),
-        margin: const EdgeInsets.all(16),
       ),
     );
   }

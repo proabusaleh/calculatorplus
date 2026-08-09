@@ -3,7 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../theme/app_theme.dart';
 import '../services/app_info.dart';
 import '../widgets/animated_builder.dart';
-import 'home_screen.dart';
+import 'app_shell.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -102,7 +102,7 @@ class _SplashScreenState extends State<SplashScreen>
 
     Navigator.of(context).pushReplacement(
       PageRouteBuilder(
-        pageBuilder: (_, __, ___) => const HomeScreen(),
+        pageBuilder: (_, __, ___) => const AppShell(),
         transitionsBuilder: (_, anim, __, child) {
           return FadeTransition(
             opacity: anim,
@@ -172,13 +172,13 @@ class _SplashScreenState extends State<SplashScreen>
                         boxShadow: [
                           BoxShadow(
                             color:
-                            AppTheme.primaryOrange.withValues(alpha:0.4),
+                            AppTheme.electricBlue.withValues(alpha:0.45),
                             blurRadius: 40,
                             offset: const Offset(0, 15),
                           ),
                           BoxShadow(
                             color:
-                            AppTheme.deepOrange.withValues(alpha:0.2),
+                            AppTheme.purple.withValues(alpha:0.25),
                             blurRadius: 60,
                             offset: const Offset(0, 25),
                           ),
@@ -243,14 +243,14 @@ class _SplashScreenState extends State<SplashScreen>
                         // ─── CHANGE YOUR TAGLINE HERE ───
                         Text(
                           // ⬇️ CHANGE THIS to your tagline
-                          'SCIENTIFIC EDITION',
+                          'ALL-IN-ONE SMART CALCULATOR',
                           style: GoogleFonts.inter(
-                            fontSize: size.width * 0.03,
-                            fontWeight: FontWeight.w600,
+                            fontSize: size.width * 0.026,
+                            fontWeight: FontWeight.w700,
                             color: isDark
-                                ? Colors.white.withValues(alpha:0.3)
+                                ? Colors.white.withValues(alpha:0.35)
                                 : const Color(0xFF8E8E93),
-                            letterSpacing: 4,
+                            letterSpacing: 3,
                           ),
                         ),
 
@@ -283,7 +283,7 @@ class _SplashScreenState extends State<SplashScreen>
               builder: (context, _) {
                 return Opacity(
                   opacity: _loadFade.value,
-                  child: const _LoadingDots(color: AppTheme.primaryOrange),
+                  child: const _LoadingDots(color: AppTheme.electricBlue),
                 );
               },
             ),
@@ -326,9 +326,9 @@ class _SplashScreenState extends State<SplashScreen>
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            Color(0xFFFF9500),
-            Color(0xFFFF5E00),
-            Color(0xFFE04500),
+            Color(0xFF4D7CFF),
+            Color(0xFF8B5CF6),
+            Color(0xFF7C3AED),
           ],
         ),
       ),

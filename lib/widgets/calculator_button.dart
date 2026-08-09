@@ -11,6 +11,7 @@ enum CalcButtonType {
   equals,
   scientific,
   memory,
+  clear,
 }
 
 class CalculatorButton extends StatefulWidget {
@@ -40,20 +41,6 @@ class CalculatorButton extends StatefulWidget {
 class _CalculatorButtonState extends State<CalculatorButton> {
   bool _pressed = false;
 
-  static const Color _primaryOrange = Color(0xFFFF9500);
-  static const Color _darkBg1 = Color(0xFF48484A);
-  static const Color _darkBg2 = Color(0xFF3A3A3C);
-  static const Color _lightBg1 = Colors.white;
-  static const Color _lightBg2 = Color(0xFFF2F2F7);
-  static const Color _funcDark1 = Color(0xFF3A3A3C);
-  static const Color _funcDark2 = Color(0xFF2C2C2E);
-  static const Color _funcLight1 = Color(0xFFE5E5EA);
-  static const Color _funcLight2 = Color(0xFFD1D1D6);
-  static const Color _sciDark1 = Color(0xFF2C2C3A);
-  static const Color _sciDark2 = Color(0xFF22222E);
-  static const Color _sciLight1 = Color(0xFFE8E8F0);
-  static const Color _sciLight2 = Color(0xFFD8D8E4);
-
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -76,9 +63,7 @@ class _CalculatorButtonState extends State<CalculatorButton> {
             gradient: _gradient(isDark),
             borderRadius: BorderRadius.circular(16),
             boxShadow: _boxShadows(isDark),
-            border: widget.isActive
-                ? Border.all(color: _primaryOrange, width: 1.5)
-                : null,
+            border: Border.all(color: _borderColor(isDark)),
           ),
           child: Center(
             child: FittedBox(
@@ -121,72 +106,101 @@ class _CalculatorButtonState extends State<CalculatorButton> {
     if (widget.type == CalcButtonType.equals) {
       return [
         BoxShadow(
-          color: _primaryOrange.withValues(alpha: 0.3),
-          blurRadius: 14,
+          color: AppTheme.electricBlue.withValues(alpha: 0.4),
+          blurRadius: 16,
           offset: const Offset(0, 5),
+        ),
+        BoxShadow(
+          color: AppTheme.purple.withValues(alpha: 0.22),
+          blurRadius: 26,
+          offset: const Offset(0, 8),
+        ),
+      ];
+    }
+    if (widget.type == CalcButtonType.clear) {
+      return [
+        BoxShadow(
+          color: AppTheme.red.withValues(alpha: 0.12),
+          blurRadius: 10,
+          offset: const Offset(0, 4),
         ),
       ];
     }
     return [
       BoxShadow(
         color: isDark
-            ? Colors.black.withValues(alpha: 0.25)
+            ? Colors.black.withValues(alpha: 0.35)
             : Colors.black.withValues(alpha: 0.06),
-        blurRadius: 6,
-        offset: const Offset(0, 3),
+        blurRadius: 8,
+        offset: const Offset(0, 4),
       ),
     ];
+  }
+
+  Color _borderColor(bool isDark) {
+    switch (widget.type) {
+      case CalcButtonType.equals:
+        return Colors.white.withValues(alpha: 0.16);
+      case CalcButtonType.operator:
+        return AppTheme.orange.withValues(alpha: 0.18);
+      case CalcButtonType.clear:
+        return AppTheme.red.withValues(alpha: 0.18);
+      case CalcButtonType.memory:
+        return AppTheme.purple.withValues(alpha: 0.22);
+      case CalcButtonType.scientific:
+        return AppTheme.cyan.withValues(alpha: 0.1);
+      default:
+        return Colors.white.withValues(alpha: isDark ? 0.05 : 0.2);
+    }
   }
 
   LinearGradient _gradient(bool isDark) {
     switch (widget.type) {
       case CalcButtonType.equals:
-        return const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Color(0xFFFF9500), Color(0xFFFF5E00)],
-        );
+        return AppTheme.equalsGradient;
       case CalcButtonType.operator:
         return LinearGradient(
-          colors: isDark
-              ? [
-                  _primaryOrange.withValues(alpha: 0.2),
-                  const Color(0xFFFF6B00).withValues(alpha: 0.12),
-                ]
-              : [
-                  _primaryOrange.withValues(alpha: 0.12),
-                  const Color(0xFFFF6B00).withValues(alpha: 0.08),
-                ],
+          colors: [
+            AppTheme.orange.withValues(alpha: isDark ? 0.2 : 0.12),
+            const Color(0xFFFF6B00).withValues(alpha: isDark ? 0.1 : 0.06),
+          ],
+        );
+      case CalcButtonType.clear:
+        return LinearGradient(
+          colors: [
+            AppTheme.red.withValues(alpha: isDark ? 0.16 : 0.1),
+            AppTheme.red.withValues(alpha: isDark ? 0.08 : 0.05),
+          ],
         );
       case CalcButtonType.function_:
         return LinearGradient(
           colors: isDark
-              ? const [_funcDark1, _funcDark2]
-              : const [_funcLight1, _funcLight2],
+              ? const [Color(0xFF1C2430), Color(0xFF171D28)]
+              : const [Color(0xFFE8E8EA), Color(0xFFD9D9DE)],
         );
       case CalcButtonType.scientific:
         return LinearGradient(
           colors: isDark
-              ? const [_sciDark1, _sciDark2]
-              : const [_sciLight1, _sciLight2],
+              ? const [Color(0xFF1A2232), Color(0xFF151C2A)]
+              : const [Color(0xFFE8E8F0), Color(0xFFD8D8E4)],
         );
       case CalcButtonType.memory:
         return LinearGradient(
           colors: isDark
               ? [
-                  AppTheme.accentPurple.withValues(alpha: 0.18),
-                  AppTheme.accentPurple.withValues(alpha: 0.1),
+                  AppTheme.purple.withValues(alpha: 0.18),
+                  AppTheme.purple.withValues(alpha: 0.08),
                 ]
               : [
-                  AppTheme.accentPurple.withValues(alpha: 0.1),
-                  AppTheme.accentPurple.withValues(alpha: 0.06),
+                  AppTheme.purple.withValues(alpha: 0.1),
+                  AppTheme.purple.withValues(alpha: 0.05),
                 ],
         );
       default:
         return LinearGradient(
           colors: isDark
-              ? const [_darkBg1, _darkBg2]
-              : const [_lightBg1, _lightBg2],
+              ? const [Color(0xFF1D2530), Color(0xFF161C26)]
+              : const [Colors.white, Color(0xFFF2F2F6)],
         );
     }
   }
@@ -196,11 +210,13 @@ class _CalculatorButtonState extends State<CalculatorButton> {
       case CalcButtonType.equals:
         return Colors.white;
       case CalcButtonType.operator:
-        return _primaryOrange;
+        return AppTheme.orange;
+      case CalcButtonType.clear:
+        return AppTheme.red;
       case CalcButtonType.scientific:
-        return isDark ? AppTheme.teal : AppTheme.primaryBlue;
+        return isDark ? AppTheme.cyan : AppTheme.electricBlue;
       case CalcButtonType.memory:
-        return AppTheme.accentPurple;
+        return AppTheme.purple;
       default:
         return isDark ? Colors.white : const Color(0xFF1C1C1E);
     }
@@ -217,7 +233,9 @@ class _CalculatorButtonState extends State<CalculatorButton> {
       case CalcButtonType.memory:
         return 12;
       case CalcButtonType.function_:
-        return widget.label == 'AC' ? 16 : 18;
+        return 18;
+      case CalcButtonType.clear:
+        return 16;
       default:
         return 20;
     }
@@ -228,6 +246,7 @@ class _CalculatorButtonState extends State<CalculatorButton> {
       case CalcButtonType.scientific:
       case CalcButtonType.memory:
       case CalcButtonType.function_:
+      case CalcButtonType.clear:
         return FontWeight.w600;
       default:
         return FontWeight.w500;

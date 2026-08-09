@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../services/prefs_service.dart';
+import '../theme/app_theme.dart';
 
 enum AppThemeMode {
   dark,
@@ -21,10 +22,10 @@ class ThemeProvider extends ChangeNotifier {
 
   ThemeData? _cachedTheme;
   AppThemeMode _cachedThemeMode = AppThemeMode.dark;
-  Color _cachedCustomPrimary = const Color(0xFFFF9500);
-  Color _cachedCustomBg = const Color(0xFF1C1C1E);
-  Color _cachedCustomSurface = const Color(0xFF2C2C2E);
-  Color _cachedCustomAccent = const Color(0xFF007AFF);
+  Color _cachedCustomPrimary = const Color(0xFF4D7CFF);
+  Color _cachedCustomBg = const Color(0xFF070A0F);
+  Color _cachedCustomSurface = const Color(0xFF141A22);
+  Color _cachedCustomAccent = const Color(0xFF8B5CF6);
 
   ThemeMode get materialThemeMode {
     switch (_themeMode) {
@@ -53,10 +54,10 @@ class ThemeProvider extends ChangeNotifier {
   }
 
   // Custom colors
-  Color _customPrimary = const Color(0xFFFF9500);
-  Color _customBg = const Color(0xFF1C1C1E);
-  Color _customSurface = const Color(0xFF2C2C2E);
-  Color _customAccent = const Color(0xFF007AFF);
+  Color _customPrimary = const Color(0xFF4D7CFF);
+  Color _customBg = const Color(0xFF070A0F);
+  Color _customSurface = const Color(0xFF141A22);
+  Color _customAccent = const Color(0xFF8B5CF6);
 
   Color get customPrimary => _customPrimary;
   Color get customBg => _customBg;
@@ -130,7 +131,7 @@ class ThemeProvider extends ChangeNotifier {
   Color get bgColor {
     switch (_themeMode) {
       case AppThemeMode.dark:
-        return const Color(0xFF0A0A0C);
+        return AppTheme.bg;
       case AppThemeMode.oled:
         return const Color(0xFF000000);
       case AppThemeMode.sepia:
@@ -147,7 +148,7 @@ class ThemeProvider extends ChangeNotifier {
   Color get surfaceColor {
     switch (_themeMode) {
       case AppThemeMode.dark:
-        return const Color(0xFF1C1C1E);
+        return AppTheme.surface;
       case AppThemeMode.oled:
         return const Color(0xFF0A0A0A);
       case AppThemeMode.sepia:
@@ -164,7 +165,7 @@ class ThemeProvider extends ChangeNotifier {
   Color get cardColor {
     switch (_themeMode) {
       case AppThemeMode.dark:
-        return const Color(0xFF2C2C2E);
+        return AppTheme.card;
       case AppThemeMode.oled:
         return const Color(0xFF111111);
       case AppThemeMode.sepia:
@@ -187,7 +188,7 @@ class ThemeProvider extends ChangeNotifier {
       case AppThemeMode.custom:
         return _customPrimary;
       default:
-        return const Color(0xFFFF9500);
+        return AppTheme.electricBlue;
     }
   }
 
@@ -200,7 +201,7 @@ class ThemeProvider extends ChangeNotifier {
       case AppThemeMode.custom:
         return _customAccent;
       default:
-        return const Color(0xFF007AFF);
+        return AppTheme.electricBlue;
     }
   }
 
@@ -238,7 +239,7 @@ class ThemeProvider extends ChangeNotifier {
       case AppThemeMode.highContrast:
         return const Color(0xFF333333);
       default:
-        return const Color(0xFF3A3A3C);
+        return AppTheme.cardElevated;
     }
   }
 
@@ -287,13 +288,13 @@ class ThemeProvider extends ChangeNotifier {
   ThemeData get _darkTheme => ThemeData(
         useMaterial3: true,
         brightness: Brightness.dark,
-        primaryColor: const Color(0xFFFF9500),
-        scaffoldBackgroundColor: const Color(0xFF0A0A0C),
+        primaryColor: AppTheme.electricBlue,
+        scaffoldBackgroundColor: AppTheme.bg,
         colorScheme: const ColorScheme.dark(
-          primary: Color(0xFFFF9500),
-          secondary: Color(0xFF007AFF),
-          tertiary: Color(0xFF5856D6),
-          surface: Color(0xFF1C1C1E),
+          primary: Color(0xFF4D7CFF),
+          secondary: Color(0xFF8B5CF6),
+          tertiary: Color(0xFF22D3EE),
+          surface: Color(0xFF10151C),
           error: Color(0xFFFF3B30),
           onPrimary: Colors.white,
           onSurface: Colors.white,
@@ -321,12 +322,12 @@ class ThemeProvider extends ChangeNotifier {
   ThemeData get _oledTheme => ThemeData(
         useMaterial3: true,
         brightness: Brightness.dark,
-        primaryColor: const Color(0xFFFF9500),
+        primaryColor: AppTheme.electricBlue,
         scaffoldBackgroundColor: Colors.black,
         colorScheme: const ColorScheme.dark(
-          primary: Color(0xFFFF9500),
-          secondary: Color(0xFF007AFF),
-          tertiary: Color(0xFF5856D6),
+          primary: Color(0xFF4D7CFF),
+          secondary: Color(0xFF8B5CF6),
+          tertiary: Color(0xFF22D3EE),
           surface: Color(0xFF0A0A0A),
           error: Color(0xFFFF3B30),
           onPrimary: Colors.white,

@@ -78,6 +78,55 @@ class _DisplayPanelState extends State<DisplayPanel>
             mainAxisAlignment: MainAxisAlignment.end,
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
+              // Indicators row (memory / error)
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  if (state.hasError)
+                    Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: Icon(
+                        Icons.error_outline_rounded,
+                        size: 14,
+                        color: AppTheme.red.withValues(alpha: 0.85),
+                      ),
+                    ),
+                  if (state.memory.isNotEmpty)
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 7, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: AppTheme.purple.withValues(alpha: 0.16),
+                        borderRadius: BorderRadius.circular(6),
+                        border: Border.all(
+                          color: AppTheme.purple.withValues(alpha: 0.4),
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.memory_rounded,
+                            size: 10,
+                            color: AppTheme.purple,
+                          ),
+                          const SizedBox(width: 3),
+                          Text(
+                            state.memory,
+                            style: GoogleFonts.getFont(
+                              fontFamily,
+                              fontSize: 10,
+                              fontWeight: FontWeight.w600,
+                              color: AppTheme.purple,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                ],
+              ),
+              const SizedBox(height: 4),
+
               // Expression
               Expanded(
                 child: Align(
@@ -126,32 +175,54 @@ class _DisplayPanelState extends State<DisplayPanel>
                           child: SingleChildScrollView(
                             scrollDirection: Axis.horizontal,
                             reverse: true,
-                            child: AutoSizeText(
-                              state.hasError
-                                  ? state.errorMessage
-                                  : '= ${CalculatorService.formatDisplayNumber(state.result)}',
-                              style: GoogleFonts.getFont(
-                                fontFamily,
-                                fontSize: (state.shouldResetOnNextInput
-                                    ? size.width * 0.08
-                                    : size.width * 0.055) * resultScale,
-                                fontWeight:
-                                state.shouldResetOnNextInput
-                                    ? FontWeight.w600
-                                    : FontWeight.w400,
-                                color: state.hasError
-                                    ? Colors.red.withValues(alpha: 0.8)
-                                    : state.shouldResetOnNextInput
-                                    ? (isDark
-                                    ? Colors.white
-                                    : const Color(0xFF1C1C1E))
-                                    : (isDark
-                                    ? Colors.white
-                                    .withValues(alpha: 0.38)
-                                    : const Color(0xFF8E8E93)),
-                              ),
-                              maxLines: 1,
-                              minFontSize: 14,
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              crossAxisAlignment: CrossAxisAlignment.baseline,
+                              textBaseline: TextBaseline.alphabetic,
+                              children: [
+                                if (state.hasError)
+                                  AutoSizeText(
+                                    state.errorMessage,
+                                    style: GoogleFonts.getFont(
+                                      fontFamily,
+                                      fontSize: size.width * 0.055 * resultScale,
+                                      fontWeight: FontWeight.w600,
+                                      color: AppTheme.red.withValues(alpha: 0.9),
+                                    ),
+                                    maxLines: 1,
+                                    minFontSize: 14,
+                                  )
+                                else ...[
+                                  Text(
+                                    '=',
+                                    style: GoogleFonts.getFont(
+                                      fontFamily,
+                                      fontSize: (state.shouldResetOnNextInput
+                                          ? size.width * 0.08
+                                          : size.width * 0.055) * resultScale,
+                                      fontWeight: FontWeight.w700,
+                                      color: AppTheme.electricBlue,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  AutoSizeText(
+                                    CalculatorService.formatDisplayNumber(
+                                        state.result),
+                                    style: GoogleFonts.getFont(
+                                      fontFamily,
+                                      fontSize: (state.shouldResetOnNextInput
+                                          ? size.width * 0.08
+                                          : size.width * 0.055) * resultScale,
+                                      fontWeight: FontWeight.w700,
+                                      color: isDark
+                                          ? Colors.white
+                                          : const Color(0xFF1C1C1E),
+                                    ),
+                                    maxLines: 1,
+                                    minFontSize: 14,
+                                  ),
+                                ],
+                              ],
                             ),
                           ),
                         ),
