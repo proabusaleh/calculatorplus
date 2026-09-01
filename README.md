@@ -40,6 +40,7 @@ Built with **Flutter** — beautiful, fast, and free.
 | 📖 | **Constants Library** | Physics & math constants at your fingertips |
 | 🧠 | **Memory & History** | Store results, recall calculations, revisit history |
 | 🌗 | **Themes & Haptics** | Dark/light modes, custom accents, haptic feedback |
+| 🔄 | **Auto Updates** | Built-in update checker that finds new GitHub releases |
 
 ---
 
@@ -73,18 +74,27 @@ flutter test
 
 ## 📦 Download
 
-Pre-built signed release APKs are generated for each release.
+Pre-built signed release APKs are generated for each [GitHub release](https://github.com/proabusaleh/calculatorplus/releases).
 
 ### Latest Release — v2.0.0
 
-| Build | ABI | Size | Best for |
-|---|---|---|---|
-| **Universal APK** | `armeabi-v7a + arm64-v8a + x86_64` | — | Install anywhere, maximum compatibility |
-| **arm64-v8a APK** | `arm64-v8a` | — | Most modern Android phones |
-| **armeabi-v7a APK** | `armeabi-v7a` | — | Older 32-bit devices |
-| **x86_64 APK** | `x86_64` | — | Emulators & Chromebooks |
+| Build | Size |
+|---|---|
+| **Universal APK** | ~81 MB |
 
-> **Tip:** Most users should grab the **arm64-v8a** build. Use the **Universal APK** if your device's architecture is unknown or you need maximum compatibility.
+> **Direct download:** [CalculatorPlus-v2.0.0.apk](https://github.com/proabusaleh/calculatorplus/releases/download/v2.0.0/CalculatorPlus-v2.0.0.apk)
+
+### Update checking
+
+Calculator Plus includes a built-in **update checker** (`UpdateService`). On launch it queries the
+GitHub Releases API for the latest version. When a newer release is found, it shows an
+**"Update Available"** dialog with the release notes and an **Update Now** button that downloads
+the APK directly from GitHub. No app store needed.
+
+To ship an update, just bump the version in `pubspec.yaml`, rebuild, and **create a new GitHub
+release** with an attached `.apk` asset — users on older versions will be prompted automatically.
+
+> The in-app source for this is `lib/services/update_service.dart` and `lib/widgets/update_dialog.dart`.
 
 ### Build it yourself
 
@@ -109,6 +119,7 @@ Outputs land in `build/app/outputs/flutter-apk/`.
 - **State Management** — [Provider](https://pub.dev/packages/provider)
 - **Fonts** — [Google Fonts](https://pub.dev/packages/google_fonts)
 - **Persistence** — [SharedPreferences](https://pub.dev/packages/shared_preferences)
+- **Updates** — [http](https://pub.dev/packages/http) + [url_launcher](https://pub.dev/packages/url_launcher) via GitHub Releases
 - **Icons** — [flutter_launcher_icons](https://pub.dev/packages/flutter_launcher_icons)
 
 ---
@@ -122,8 +133,11 @@ lib/
 ├── providers/                # State management (theme, settings, memory)
 ├── screens/                  # 21 feature screens
 ├── services/                 # Domain logic & calculation engines
+│   ├── update_service.dart   # GitHub release update checker
+│   └── app_info.dart         # Installed app version
 ├── theme/                    # App theming & color system
 └── widgets/                  # Reusable UI widgets
+    └── update_dialog.dart    # "Update Available" prompt
 ```
 
 ---
