@@ -6,12 +6,7 @@
 
 **A premium all-in-one scientific calculator with 100+ tools across physics, engineering, chemistry, mathematics, and more.**
 
-Built with **Flutter** — beautiful, fast, and free.
-
-[![Platform](https://img.shields.io/badge/platform-Android%20%7C%20iOS%20%7C%20Web-blue)](#download)
-[![Flutter](https://img.shields.io/badge/Flutter-3.44-02569B?logo=flutter&logoColor=white)](#)
-[![License](https://img.shields.io/badge/license-MIT-green)](#license)
-[![Version](https://img.shields.io/badge/version-2.0.0-ff7043)](#download)
+Built — beautiful, fast, and free.
 
 </div>
 
@@ -46,31 +41,6 @@ Built with **Flutter** — beautiful, fast, and free.
 
 ## 🚀 Getting Started
 
-### Prerequisites
-
-- [Flutter SDK](https://docs.flutter.dev/get-started/install) `3.x`
-- Android SDK / Xcode / Chrome (depending on your target)
-
-### Run the app
-
-```bash
-# Install dependencies
-flutter pub get
-
-# Run on a connected device / emulator
-flutter run
-
-# Run on the web
-flutter run -d chrome
-```
-
-### Run tests
-
-```bash
-flutter test
-```
-
----
 
 ## 📦 Download
 
@@ -83,18 +53,6 @@ Pre-built signed release APKs are generated for each [GitHub release](https://gi
 | **Universal APK** | ~81 MB |
 
 > **Direct download:** [CalculatorPlus-v2.0.0.apk](https://github.com/proabusaleh/calculatorplus/releases/download/v2.0.0/CalculatorPlus-v2.0.0.apk)
-
-### Update checking
-
-Calculator Plus includes a built-in **update checker** (`UpdateService`). On launch it queries the
-GitHub Releases API for the latest version. When a newer release is found, it shows an
-**"Update Available"** dialog with the release notes and an **Update Now** button that downloads
-the APK directly from GitHub. No app store needed.
-
-To ship an update, just bump the version in `pubspec.yaml`, rebuild, and **create a new GitHub
-release** with an attached `.apk` asset — users on older versions will be prompted automatically.
-
-> The in-app source for this is `lib/services/update_service.dart` and `lib/widgets/update_dialog.dart`.
 
 ### Build it yourself
 
@@ -150,6 +108,5 @@ This project is open source and available under the [MIT License](LICENSE).
 
 <div align="center">
 
-Made with ❤️ with Flutter
-
+Made By Abu Saleh
 </div>
