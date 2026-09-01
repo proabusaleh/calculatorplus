@@ -4,7 +4,9 @@ import 'package:provider/provider.dart';
 import '../models/calculator_state.dart';
 import '../providers/calculator_provider.dart';
 import '../services/haptic_service.dart';
+import '../services/update_service.dart';
 import '../theme/app_theme.dart';
+import '../widgets/update_dialog.dart';
 import 'home_screen.dart';
 import 'calculator_screen.dart';
 import 'tools_screen.dart';
@@ -23,6 +25,18 @@ class AppShell extends StatefulWidget {
 
 class _AppShellState extends State<AppShell> {
   int _index = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkForUpdate();
+  }
+
+  Future<void> _checkForUpdate() async {
+    final info = await UpdateService.checkForUpdate();
+    if (!mounted) return;
+    UpdateDialog.maybeShow(context, info);
+  }
 
   void _switchTab(int index) {
     if (index == _index) return;

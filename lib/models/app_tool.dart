@@ -48,6 +48,30 @@ class AppTools {
 
   static final List<AppTool> all = [
     AppTool(
+      id: 'converter',
+      title: 'Unit Converter',
+      subtitle: 'Length, mass, temp, currency, area, more',
+      icon: Icons.straighten_rounded,
+      color: AppTheme.green,
+      builder: (_) => const UnitConverterScreen(),
+    ),
+    AppTool(
+      id: 'date_time',
+      title: 'Date & Time',
+      subtitle: 'Age, date difference, duration',
+      icon: Icons.calendar_month_rounded,
+      color: AppTheme.purple,
+      builder: (_) => const DateTimeScreen(),
+    ),
+    AppTool(
+      id: 'programmer',
+      title: 'Programmer Mode',
+      subtitle: 'Binary, hex, octal & bitwise operations',
+      icon: Icons.code_rounded,
+      color: AppTheme.orange,
+      builder: (_) => const ProgrammerScreen(),
+    ),
+    AppTool(
       id: 'algebra',
       title: 'Algebra & Symbolic',
       subtitle: 'Equation solver, factorization, simplification',
@@ -128,36 +152,12 @@ class AppTools {
       builder: (_) => const ScienceToolsScreen(),
     ),
     AppTool(
-      id: 'converter',
-      title: 'Unit Converter',
-      subtitle: 'Length, mass, temp, currency, area, more',
-      icon: Icons.straighten_rounded,
-      color: AppTheme.green,
-      builder: (_) => const UnitConverterScreen(),
-    ),
-    AppTool(
-      id: 'programmer',
-      title: 'Programmer Mode',
-      subtitle: 'Binary, hex, octal & bitwise operations',
-      icon: Icons.code_rounded,
-      color: AppTheme.orange,
-      builder: (_) => const ProgrammerScreen(),
-    ),
-    AppTool(
       id: 'financial',
       title: 'Financial',
       subtitle: 'Interest, loan, EMI, investment',
       icon: Icons.account_balance_rounded,
       color: AppTheme.pink,
       builder: (_) => const FinancialScreen(),
-    ),
-    AppTool(
-      id: 'date_time',
-      title: 'Date & Time',
-      subtitle: 'Age, date difference, duration',
-      icon: Icons.calendar_month_rounded,
-      color: AppTheme.purple,
-      builder: (_) => const DateTimeScreen(),
     ),
     AppTool(
       id: 'constants',

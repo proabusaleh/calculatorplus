@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../models/app_tool.dart';
@@ -8,7 +7,6 @@ import '../providers/calculator_provider.dart';
 import '../services/calculator_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/app_logo.dart';
-import '../widgets/glow_button.dart';
 import '../widgets/hero_card.dart';
 import '../widgets/search_field.dart';
 import '../widgets/section_header.dart';
@@ -445,15 +443,24 @@ class _ProSheet extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 24),
-          GlowButton(
-            label: 'Unlock everything',
-            expanded: true,
-            onTap: () {
-              Clipboard.setData(
-                const ClipboardData(text: 'Calculator Plus PRO — All-in-one Smart Calculator'),
-              );
-              Navigator.pop(context);
-            },
+          Text(
+            'Available in the future update',
+            style: GoogleFonts.inter(
+              fontSize: 13,
+              color: Colors.white.withValues(alpha: 0.35),
+            ),
+          ),
+          const SizedBox(height: 8),
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(
+              'Close',
+              style: GoogleFonts.inter(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: AppTheme.cyan,
+              ),
+            ),
           ),
         ],
       ),
