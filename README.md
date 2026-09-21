@@ -46,13 +46,13 @@ Built — beautiful, fast, and free.
 
 Pre-built signed release APKs are generated for each [GitHub release](https://github.com/proabusaleh/calculatorplus/releases).
 
-### Latest Release — v2.0.0
+### Latest Release — v2.0.1
 
 | Build | Size |
 |---|---|
 | **Universal APK** | ~81 MB |
 
-> **Direct download:** [CalculatorPlus-v2.0.0.apk](https://github.com/proabusaleh/calculatorplus/releases/download/v2.0.0/CalculatorPlus-v2.0.0.apk)
+> **Direct download:** [CalculatorPlus-v2.0.1.apk](https://github.com/proabusaleh/calculatorplus/releases/download/v2.0.1/CalculatorPlus-v2.0.1.apk)
 
 ### Build it yourself
 

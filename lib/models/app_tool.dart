@@ -187,22 +187,6 @@ class AppTools {
       color: AppTheme.purple,
       builder: (_) => const CalculatorScreen(initialMode: 1),
     ),
-    AppTool(
-      id: 'calc_graphing',
-      title: 'Graphing',
-      subtitle: '2D function plots',
-      icon: Icons.show_chart_rounded,
-      color: AppTheme.cyan,
-      builder: (_) => const GraphingScreen(),
-    ),
-    AppTool(
-      id: 'calc_converter',
-      title: 'Converter',
-      subtitle: 'Any unit, instantly',
-      icon: Icons.straighten_rounded,
-      color: AppTheme.green,
-      builder: (_) => const UnitConverterScreen(),
-    ),
   ];
 
   static AppTool? byId(String id) {
