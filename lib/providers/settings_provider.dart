@@ -12,6 +12,15 @@ class SettingsProvider extends ChangeNotifier {
   static const String _profilesKey = 'user_profiles';
   static const String _activeProfileKey = 'active_profile_id';
 
+  /// Keys for display prefs are shared with the 'default' profile (for
+  /// backward compatibility with previously saved values) and namespaced by
+  /// profile id for everything else.
+  static String _displayPrefsKey(String profileId) =>
+      profileId == 'default' ? _prefsKey : '${_prefsKey}_$profileId';
+
+  static String _layoutKeyFor(String profileId) =>
+      profileId == 'default' ? _layoutKey : '${_layoutKey}_$profileId';
+
   DisplayPreferences _displayPrefs = const DisplayPreferences();
   DisplayPreferences get displayPrefs => _displayPrefs;
 
@@ -146,8 +155,27 @@ class SettingsProvider extends ChangeNotifier {
 
   Future<void> setActiveProfile(String profileId) async {
     if (!_profiles.any((p) => p.id == profileId)) return;
+    if (profileId == _activeProfileId) return;
+
+    // Persist the outgoing profile's settings before switching away.
+    _saveDebounceTimer?.cancel();
+    final previousId = _activeProfileId;
+    try {
+      final prefs = await PrefsService.getInstance();
+      await prefs.setString(
+        _displayPrefsKey(previousId),
+        jsonEncode(_displayPrefs.toJson()),
+      );
+      await prefs.setStringList(
+        _layoutKeyFor(previousId),
+        _buttonLayout.map((b) => jsonEncode(b.toJson())).toList(),
+      );
+    } catch (_) {}
+
     _activeProfileId = profileId;
+    await _loadProfileSettings(profileId);
     notifyListeners();
+
     try {
       final prefs = await PrefsService.getInstance();
       await prefs.setString(_activeProfileKey, profileId);
@@ -175,6 +203,7 @@ class SettingsProvider extends ChangeNotifier {
     _profiles.removeWhere((p) => p.id == id);
     if (_activeProfileId == id) {
       _activeProfileId = 'default';
+      await _loadProfileSettings('default');
     }
     notifyListeners();
     await _saveProfiles();
@@ -183,16 +212,21 @@ class SettingsProvider extends ChangeNotifier {
   // ─────────────────── Persistence ───────────────────
 
   Future<void> _loadAll() async {
-    await _loadPrefs();
-    await _loadLayout();
     await _loadProfiles();
     await _loadActiveProfile();
+    await _loadProfileSettings(_activeProfileId);
+    notifyListeners();
   }
 
-  Future<void> _loadPrefs() async {
+  Future<void> _loadProfileSettings(String profileId) async {
+    await _loadDisplayPrefs(profileId);
+    await _loadButtonLayout(profileId);
+  }
+
+  Future<void> _loadDisplayPrefs(String profileId) async {
     try {
       final prefs = await PrefsService.getInstance();
-      final json = prefs.getString(_prefsKey);
+      final json = prefs.getString(_displayPrefsKey(profileId));
       if (json != null) {
         _displayPrefs = DisplayPreferences.fromJson(
           jsonDecode(json) as Map<String, dynamic>,
@@ -201,20 +235,10 @@ class SettingsProvider extends ChangeNotifier {
     } catch (_) {}
   }
 
-  Future<void> _savePrefs() async {
-    _saveDebounceTimer?.cancel();
-    _saveDebounceTimer = Timer(const Duration(milliseconds: 500), () async {
-      try {
-        final prefs = await PrefsService.getInstance();
-        await prefs.setString(_prefsKey, jsonEncode(_displayPrefs.toJson()));
-      } catch (_) {}
-    });
-  }
-
-  Future<void> _loadLayout() async {
+  Future<void> _loadButtonLayout(String profileId) async {
     try {
       final prefs = await PrefsService.getInstance();
-      final list = prefs.getStringList(_layoutKey);
+      final list = prefs.getStringList(_layoutKeyFor(profileId));
       if (list != null && list.isNotEmpty) {
         _buttonLayout = list
             .map((j) => ButtonLayoutItem.fromJson(
@@ -224,11 +248,24 @@ class SettingsProvider extends ChangeNotifier {
     } catch (_) {}
   }
 
+  void _savePrefs() {
+    final profileId = _activeProfileId;
+    _saveDebounceTimer?.cancel();
+    _saveDebounceTimer = Timer(const Duration(milliseconds: 500), () async {
+      try {
+        final prefs = await PrefsService.getInstance();
+        await prefs.setString(
+            _displayPrefsKey(profileId), jsonEncode(_displayPrefs.toJson()));
+      } catch (_) {}
+    });
+  }
+
   Future<void> _saveLayout() async {
+    final profileId = _activeProfileId;
     try {
       final prefs = await PrefsService.getInstance();
       final list = _buttonLayout.map((b) => jsonEncode(b.toJson())).toList();
-      await prefs.setStringList(_layoutKey, list);
+      await prefs.setStringList(_layoutKeyFor(profileId), list);
     } catch (_) {}
   }
 

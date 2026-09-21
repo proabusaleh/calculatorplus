@@ -18,15 +18,31 @@ void main() async {
   runApp(const CalculatorPlusApp());
 }
 
-class CalculatorPlusApp extends StatelessWidget {
+class CalculatorPlusApp extends StatefulWidget {
   const CalculatorPlusApp({super.key});
+
+  @override
+  State<CalculatorPlusApp> createState() => _CalculatorPlusAppState();
+}
+
+class _CalculatorPlusAppState extends State<CalculatorPlusApp> {
+  late final SettingsProvider _settingsProvider = SettingsProvider();
+  late final ThemeProvider _themeProvider =
+      ThemeProvider(_settingsProvider);
+
+  @override
+  void dispose() {
+    _themeProvider.dispose();
+    _settingsProvider.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => ThemeProvider()),
-        ChangeNotifierProvider(create: (_) => SettingsProvider()),
+        ChangeNotifierProvider.value(value: _themeProvider),
+        ChangeNotifierProvider.value(value: _settingsProvider),
         ChangeNotifierProvider(create: (_) => MemoryProvider()),
         ChangeNotifierProvider(create: (_) => CalculatorProvider()),
       ],

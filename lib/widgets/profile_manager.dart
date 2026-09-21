@@ -89,7 +89,18 @@ class ProfileManagerWidget extends StatelessWidget {
       onTap: () {
         HapticService.selectionClick();
         settings.setActiveProfile(profile.id);
+        final messenger = ScaffoldMessenger.of(context);
         Navigator.pop(context);
+        messenger.showSnackBar(
+          SnackBar(
+            content: Text('Switched to ${profile.name}',
+                style: GoogleFonts.inter(fontWeight: FontWeight.w500)),
+            behavior: SnackBarBehavior.floating,
+            duration: const Duration(seconds: 2),
+            shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12)),
+          ),
+        );
       },
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),

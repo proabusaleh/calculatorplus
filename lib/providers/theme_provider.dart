@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../services/prefs_service.dart';
 import '../theme/app_theme.dart';
+import 'settings_provider.dart';
 
 enum AppThemeMode {
   dark,
@@ -14,8 +15,71 @@ enum AppThemeMode {
 }
 
 class ThemeProvider extends ChangeNotifier {
-  static const String _themeKey = 'theme_mode_v2';
-  static const String _customKey = 'custom_colors';
+  static const String _themeKeyBase = 'theme_mode_v2';
+  static const String _customKeyBase = 'custom_colors';
+
+  final SettingsProvider settings;
+
+  String _lastProfileId = 'default';
+
+  ThemeProvider(this.settings) {
+    _lastProfileId = settings.activeProfileId;
+    settings.addListener(_onSettingsChanged);
+    _loadTheme();
+    _loadCustomColors();
+  }
+
+  @override
+  void dispose() {
+    settings.removeListener(_onSettingsChanged);
+    super.dispose();
+  }
+
+  /// Storage key for the theme mode, namespaced by the active profile.
+  String get _themeKey => settings.activeProfileId == 'default'
+      ? _themeKeyBase
+      : '${_themeKeyBase}_${settings.activeProfileId}';
+
+  /// Storage key for custom colors, namespaced by the active profile.
+  String get _customKey => settings.activeProfileId == 'default'
+      ? _customKeyBase
+      : '${_customKeyBase}_${settings.activeProfileId}';
+
+  void _onSettingsChanged() {
+    final id = settings.activeProfileId;
+    if (id == _lastProfileId) return;
+    _lastProfileId = id;
+    applyProfile(id);
+  }
+
+  /// Loads the theme mode and custom colors stored for [profileId].
+  ///
+  /// If the profile has no saved theme yet, the current theme is kept.
+  Future<void> applyProfile(String profileId) async {
+    final themeKey = profileId == 'default'
+        ? _themeKeyBase
+        : '${_themeKeyBase}_$profileId';
+    final customKey = profileId == 'default'
+        ? _customKeyBase
+        : '${_customKeyBase}_$profileId';
+    try {
+      final prefs = await PrefsService.getInstance();
+      final index = prefs.getInt(themeKey);
+      if (index != null && index < AppThemeMode.values.length) {
+        _themeMode = AppThemeMode.values[index];
+      }
+      final json = prefs.getString(customKey);
+      if (json != null) {
+        final m = jsonDecode(json) as Map<String, dynamic>;
+        _customPrimary = Color(m['primary'] as int);
+        _customBg = Color(m['bg'] as int);
+        _customSurface = Color(m['surface'] as int);
+        _customAccent = Color(m['accent'] as int);
+      }
+      _cachedTheme = null;
+      notifyListeners();
+    } catch (_) {}
+  }
 
   AppThemeMode _themeMode = AppThemeMode.dark;
   AppThemeMode get themeMode => _themeMode;
@@ -63,11 +127,6 @@ class ThemeProvider extends ChangeNotifier {
   Color get customBg => _customBg;
   Color get customSurface => _customSurface;
   Color get customAccent => _customAccent;
-
-  ThemeProvider() {
-    _loadTheme();
-    _loadCustomColors();
-  }
 
   Future<void> setThemeMode(AppThemeMode mode) async {
     _themeMode = mode;
