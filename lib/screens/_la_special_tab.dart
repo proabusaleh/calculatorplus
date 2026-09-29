@@ -76,18 +76,6 @@ class _SpecialTab extends StatelessWidget {
     );
   }
 
-  void _showMatrixResult(BuildContext context, String title, Matrix m) {
-    _showToolSheet(context, title, Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _resultBlock(context, [
-          _ToolResult('Size', '${m.rows} x ${m.cols}'),
-        ]),
-        _matrixBlock(context, m),
-      ],
-    ));
-  }
-
   void _genIdentity(BuildContext context) {
     final ctrl = TextEditingController(text: '3');
     _showToolSheet(context, 'Identity Matrix', _StatefulBuilder(

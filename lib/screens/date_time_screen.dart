@@ -49,28 +49,6 @@ class DateTimeScreen extends StatelessWidget {
 //  SHARED HELPERS
 // ═══════════════════════════════════════════════════════════
 
-void _copyResult(BuildContext context, String text) {
-  Clipboard.setData(ClipboardData(text: text));
-  ScaffoldMessenger.of(context).showSnackBar(
-    SnackBar(
-      content: Row(
-        children: [
-          const Icon(Icons.check_circle_rounded, color: Colors.white, size: 18),
-          const SizedBox(width: 8),
-          Flexible(
-            child: Text('Copied: $text',
-                style: GoogleFonts.inter(fontWeight: FontWeight.w500)),
-          ),
-        ],
-      ),
-      backgroundColor: AppTheme.accentGreen,
-      behavior: SnackBarBehavior.floating,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      duration: const Duration(seconds: 2),
-    ),
-  );
-}
-
 void _showToolSheet(BuildContext context, String title, Widget content) {
   final isDark = Theme.of(context).brightness == Brightness.dark;
   showModalBottomSheet(
