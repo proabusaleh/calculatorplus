@@ -1,6 +1,6 @@
 name: hikmah_calculator
 description: Hikmah Calculator - a premium scientific calculator with 100+ tools across physics, engineering, chemistry, and more.
-version: 2.0.4+5
+version: 2.0.5+6
 
 environment:
   sdk: '>=3.0.0 <4.0.0'
