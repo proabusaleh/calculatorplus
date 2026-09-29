@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:calculatorplus/services/update_service.dart';
+import 'package:hikmah_calculator/services/update_service.dart';
 
 void main() {
   group('normalizeVersion', () {

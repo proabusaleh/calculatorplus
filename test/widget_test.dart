@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:calculatorplus/main.dart';
-import 'package:calculatorplus/screens/app_shell.dart';
-import 'package:calculatorplus/screens/splash_screen.dart';
+import 'package:hikmah_calculator/main.dart';
+import 'package:hikmah_calculator/screens/app_shell.dart';
+import 'package:hikmah_calculator/screens/splash_screen.dart';
 
 void main() {
   testWidgets('App smoke test', (WidgetTester tester) async {
