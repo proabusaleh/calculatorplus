@@ -20,7 +20,17 @@ class CalculatorScreen extends StatefulWidget {
   /// When true, the screen is hosted inside the app shell (no back button).
   final bool embedded;
 
-  const CalculatorScreen({super.key, this.initialMode = 0, this.embedded = false});
+  /// When true, the display panel acts as the destination of the
+  /// 'calc-display-hero' shared-element zoom from the Home card.
+  /// Only set for the pushed (non-embedded) instance — the embedded tab
+  /// instance must NOT carry the tag, or the Hero flight would conflict.
+  final bool heroDisplay;
+
+  const CalculatorScreen(
+      {super.key,
+      this.initialMode = 0,
+      this.embedded = false,
+      this.heroDisplay = false});
 
   @override
   State<CalculatorScreen> createState() => _CalculatorScreenState();
@@ -240,7 +250,15 @@ class _CalculatorScreenState extends State<CalculatorScreen>
                     if (isScientific) _buildSciInfoBar(isDark),
                     Expanded(
                       flex: isScientific ? 2 : 3,
-                      child: const DisplayPanel(),
+                      child: widget.heroDisplay
+                          ? const Hero(
+                              tag: 'calc-display-hero',
+                              child: Material(
+                                type: MaterialType.transparency,
+                                child: DisplayPanel(),
+                              ),
+                            )
+                          : const DisplayPanel(),
                     ),
                     _buildFunctionRow(isDark),
                     Expanded(
@@ -385,13 +403,6 @@ class _CalculatorScreenState extends State<CalculatorScreen>
             label: '%',
             onTap: () => Provider.of<CalculatorProvider>(context, listen: false)
                 .onButtonPressed('%'),
-          ),
-          const SizedBox(width: 8),
-          _FunctionBtn(
-            icon: Icons.backspace_outlined,
-            label: 'Delete',
-            onTap: () => Provider.of<CalculatorProvider>(context, listen: false)
-                .onButtonPressed('⌫'),
           ),
         ],
       ),

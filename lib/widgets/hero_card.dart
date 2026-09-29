@@ -106,36 +106,43 @@ class HeroCard extends StatelessWidget {
                     const Spacer(),
                     Row(
                       children: [
-                        Container(
-                          height: 40,
-                          padding: const EdgeInsets.symmetric(horizontal: 14),
-                          decoration: BoxDecoration(
-                            color: Colors.black.withValues(alpha: 0.28),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                              color: Colors.white.withValues(alpha: 0.12),
-                            ),
-                          ),
-                          alignment: Alignment.centerRight,
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                Icons.arrow_outward_rounded,
-                                size: 14,
-                                color: AppTheme.cyan.withValues(alpha: 0.8),
-                              ),
-                              const SizedBox(width: 6),
-                              Text(
-                                '0',
-                                style: GoogleFonts.getFont(
-                                  'JetBrains Mono',
-                                  fontSize: 22,
-                                  fontWeight: FontWeight.w600,
-                                  color: Colors.white,
+                        Hero(
+                          tag: 'calc-display-hero',
+                          child: Material(
+                            color: Colors.transparent,
+                            child: Container(
+                              height: 40,
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 14),
+                              decoration: BoxDecoration(
+                                color: Colors.black.withValues(alpha: 0.28),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: Colors.white.withValues(alpha: 0.12),
                                 ),
                               ),
-                            ],
+                              alignment: Alignment.centerRight,
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Icons.arrow_outward_rounded,
+                                    size: 14,
+                                    color: AppTheme.cyan.withValues(alpha: 0.8),
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    '0',
+                                    style: GoogleFonts.getFont(
+                                      'JetBrains Mono',
+                                      fontSize: 22,
+                                      fontWeight: FontWeight.w600,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
                           ),
                         ),
                       ],

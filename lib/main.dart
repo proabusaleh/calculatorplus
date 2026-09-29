@@ -15,17 +15,17 @@ void main() async {
     DeviceOrientation.portraitUp,
     DeviceOrientation.portraitDown,
   ]);
-  runApp(const CalculatorPlusApp());
+  runApp(const HikmahCalculatorApp());
 }
 
-class CalculatorPlusApp extends StatefulWidget {
-  const CalculatorPlusApp({super.key});
+class HikmahCalculatorApp extends StatefulWidget {
+  const HikmahCalculatorApp({super.key});
 
   @override
-  State<CalculatorPlusApp> createState() => _CalculatorPlusAppState();
+  State<HikmahCalculatorApp> createState() => _HikmahCalculatorAppState();
 }
 
-class _CalculatorPlusAppState extends State<CalculatorPlusApp> {
+class _HikmahCalculatorAppState extends State<HikmahCalculatorApp> {
   late final SettingsProvider _settingsProvider = SettingsProvider();
   late final ThemeProvider _themeProvider =
       ThemeProvider(_settingsProvider);
@@ -49,7 +49,7 @@ class _CalculatorPlusAppState extends State<CalculatorPlusApp> {
       child: Consumer<ThemeProvider>(
         builder: (context, themeProvider, child) {
           return MaterialApp(
-            title: 'Calculator Plus',
+            title: 'Hikmah Calculator',
             debugShowCheckedModeBanner: false,
             theme: themeProvider.themeData,
             darkTheme: themeProvider.themeData,

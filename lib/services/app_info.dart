@@ -3,7 +3,7 @@ import 'package:package_info_plus/package_info_plus.dart';
 class AppInfo {
   AppInfo._();
 
-  static String _appName = 'Calculator Plus';
+  static String _appName = 'Hikmah Calculator';
   static String _packageName = '';
   static String _version = '';
   static String _buildNumber = '';

@@ -2,7 +2,7 @@
     <!-- Required for the GitHub release update checker. -->
     <uses-permission android:name="android.permission.INTERNET"/>
     <application
-        android:label="Calculator Plus"
+        android:label="Hikmah Calculator"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity

@@ -478,141 +478,125 @@ class DateTimeService {
   }
 
   // ═══════════════════════════════════════════════════════════
-  //  HEBREW CALENDAR  – algorithmic approximation
+  //  HEBREW CALENDAR – molad-based algorithm
+  //  (Reingold & Dershowitz "Calendrical Calculations" formulation,
+  //  as popularized by Fourmilab's calendar converter)
+  //
+  //  Month numbering is civil (Tishri-first):
+  //  1 Tishri, 2 Cheshvan, 3 Kislev, 4 Tevet, 5 Shevat,
+  //  6 Adar I (leap years) / Adar (common years),
+  //  7 Adar II (leap years only),
+  //  8 Nisan, 9 Iyyar, 10 Sivan, 11 Tammuz, 12 Av, 13 Elul.
   // ═══════════════════════════════════════════════════════════
 
   static const List<String> hebrewMonthNames = [
-    '', 'Tishrei', 'Cheshvan', 'Kislev', 'Tevet', 'Shevat', 'Adar I',
+    '', 'Tishrei', 'Cheshvan', 'Kislev', 'Tevet', 'Shevat', 'Adar',
     'Adar II', 'Nisan', 'Iyyar', 'Sivan', 'Tammuz', 'Av', 'Elul',
   ];
 
-  static const List<int> hebrewMonthLengths = [
-    0, 30, 29, 29, 29, 30, 29, 29, 30, 29, 30, 29, 30, 29,
-  ];
+  /// Anchor JDN for the Hebrew day count (see [_hebrewDelay1]).
+  static const int _hebrewEpochJdn = 347996;
 
   static bool _hebrewLeapYear(int year) {
     return ((7 * year + 1) % 19) < 7;
   }
 
-  static int _hebrewYearMonths(int year) {
-    return _hebrewLeapYear(year) ? 13 : 12;
+  /// Days from the epoch anchor to the mean conjunction (molad) of
+  /// Tishri of [year], with the Sunday/Wednesday/Friday and GaTRaD
+  /// postponements applied.
+  static int _hebrewDelay1(int year) {
+    final monthsElapsed = (235 * year - 234) ~/ 19;
+    final partsElapsed = 12084 + 13753 * monthsElapsed;
+    var day = monthsElapsed * 29 + partsElapsed ~/ 25920;
+    if (((3 * (day + 1)) % 7) < 3) day++;
+    return day;
   }
 
-  static int _hebrewYearLength(int year) {
-    int len = 0;
-    final months = _hebrewYearMonths(year);
-    for (int m = 1; m <= months; m++) {
-      len += _hebrewMonthLength[m];
-    }
-    final delay = _hebrewDelayOfWeek(year);
-    final delay2 = _hebrewDelay2(year);
-    return len + delay + delay2;
-  }
-
-  static int _hebrewDelayOfWeek(int year) {
-    final months = _hebrewYearMonths(year);
-    final last = _hebrewYearDays(year, months);
-    if (last == 0) return 0;
-    return ((11 * last) % 30 < 16) ? 1 : 0;
-  }
-
+  /// Extra postponement derived from adjacent-year lengths
+  /// (BeTUTeKaPaT / year-length rule).
   static int _hebrewDelay2(int year) {
-    final months = _hebrewYearMonths(year);
-    final last = _hebrewYearDays(year, months);
-    if (last == 0) return 0;
-    final next = _hebrewYearDays(year, months + 1);
-    if (next == 0) return 0;
-    return (last - next >= 337) ? 1 : 0;
+    final last = _hebrewDelay1(year - 1);
+    final present = _hebrewDelay1(year);
+    final next = _hebrewDelay1(year + 1);
+    if (next - present == 356) return 2;
+    if (present - last == 382) return 1;
+    return 0;
   }
 
-  static int _hebrewYearDays(int year, int months) {
-    final epoch = 1;
-    int day = epoch;
-    for (int m = 1; m < months; m++) {
-      day += _hebrewMonthLength[m];
+  /// JDN of 1 Tishri of [year].
+  static int _hebrewYearStartJdn(int year) {
+    return _hebrewEpochJdn + _hebrewDelay1(year) + _hebrewDelay2(year) + 2;
+  }
+
+  /// Length of [month] (Tishri-first numbering, see above) in [year].
+  static int _hebrewMonthLengthForYear(int year, int month) {
+    switch (month) {
+      case 2: // Cheshvan: 30 days only in complete years.
+      case 3: // Kislev: 29 days only in deficient years.
+        final yearLength =
+            _hebrewYearStartJdn(year + 1) - _hebrewYearStartJdn(year);
+        final kind = yearLength % 10; // 3 deficient, 4 regular, 5 complete.
+        if (month == 2) return kind == 5 ? 30 : 29;
+        return kind == 3 ? 29 : 30;
+      case 4: // Tevet.
+      case 7: // Adar II.
+      case 9: // Iyyar.
+      case 11: // Tammuz.
+      case 13: // Elul.
+        return 29;
+      case 6: // Adar I (30 days, leap years) / Adar (29 days, common years).
+        return _hebrewLeapYear(year) ? 30 : 29;
+      default: // Tishri, Shevat, Nisan, Sivan, Av.
+        return 30;
     }
-    final delay = _hebrewDelayOfWeek(year);
-    final delay2 = _hebrewDelay2(year);
-    return day + delay + delay2;
   }
-
-  static List<int> get _hebrewMonthLength {
-    return List<int>.from(hebrewMonthLengths);
-  }
-
-  static int _hebrewMonthsInYear(int year) => _hebrewYearMonths(year);
 
   static Map<String, int> gregorianToHebrew(DateTime date) {
     final jdn = _gregorianToJdn(date.year, date.month, date.day);
-    final hebrewYear = _hebrewJdnToYear(jdn);
-    int m = 1;
-    int dayRemaining = jdn - _hebrewYearStartJdn(hebrewYear) + 1;
-    final monthsInYear = _hebrewMonthsInYear(hebrewYear);
-    while (m <= monthsInYear) {
-      final mLen = _hebrewMonthLengthForYear(hebrewYear, m);
-      if (dayRemaining <= mLen) break;
-      dayRemaining -= mLen;
-      m++;
-    }
-    return {'year': hebrewYear, 'month': m, 'day': dayRemaining};
-  }
-
-  static int _hebrewMonthLengthForYear(int year, int month) {
-    final monthsInYear = _hebrewMonthsInYear(year);
-    int len = _hebrewMonthLength[min(month, 12)];
-    if (month == 13) len = 29;
-    if (month == 12 && monthsInYear == 13) len = 30;
-    if (month == 2) {
-      final yearLen = _hebrewYearLength(year);
-      if (yearLen % 10 == 3) len = 30;
-      else if (yearLen % 10 == 8) len = 29;
-      else len = 29;
-    }
-    if (month == 3) {
-      final yearLen = _hebrewYearLength(year);
-      if (yearLen % 10 == 3) len = 29;
-      else if (yearLen % 10 == 8) len = 30;
-      else len = 29;
-    }
-    return len;
-  }
-
-  static int _hebrewJdnToYear(int jdn) {
-    int lo = 3000;
-    int hi = 6000;
+    // Binary search for the latest year starting on/before [jdn].
+    var lo = 1;
+    var hi = 6000;
     while (lo < hi) {
-      final mid = (lo + hi) ~/ 2;
-      if (_hebrewYearStartJdn(mid + 1) <= jdn) {
-        lo = mid + 1;
+      final mid = (lo + hi + 1) ~/ 2;
+      if (_hebrewYearStartJdn(mid) <= jdn) {
+        lo = mid;
       } else {
-        hi = mid;
+        hi = mid - 1;
       }
     }
-    return lo;
-  }
-
-  static int _hebrewYearStartJdn(int year) {
-    final epoch = 347997;
-    int months = 0;
-    final hebrewMonths = [0, 0, 59, 88, 117, 147, 176, 206, 235, 265, 294, 324, 353, 383];
-    final cycle = (year - 1) ~/ 19;
-    final remainder = (year - 1) % 19;
-    months = 235 * cycle;
-    for (int i = 0; i < remainder; i++) {
-      months += hebrewMonths[i + 1] - hebrewMonths[i];
+    final year = lo;
+    final leap = _hebrewLeapYear(year);
+    var dayOfYear = jdn - _hebrewYearStartJdn(year);
+    var month = 1;
+    while (month <= 13) {
+      if (month == 7 && !leap) {
+        month = 8; // No Adar II in common years.
+        continue;
+      }
+      final len = _hebrewMonthLengthForYear(year, month);
+      if (dayOfYear < len) break;
+      dayOfYear -= len;
+      month++;
     }
-    if (remainder >= 17) months -= 1;
-    final day = months * 29 + ((remainder * 7 + 1) ~/ 19);
-    return epoch + day + 1;
+    return {
+      'year': year,
+      'month': month,
+      'day': dayOfYear + 1,
+      'isLeapYear': leap ? 1 : 0,
+    };
   }
 
   static DateTime hebrewToGregorian(int year, int month, int day) {
-    int jdn = _hebrewYearStartJdn(year);
-    final monthsInYear = _hebrewMonthsInYear(year);
-    for (int m = 1; m < month; m++) {
-      jdn += _hebrewMonthLengthForYear(year, m);
+    final leap = _hebrewLeapYear(year);
+    var m = month.clamp(1, 13);
+    if (m == 7 && !leap) m = 6; // No Adar II in common years: use Adar.
+    var jdn = _hebrewYearStartJdn(year);
+    for (var i = 1; i < m; i++) {
+      if (i == 7 && !leap) continue; // Skip the non-existent Adar II.
+      jdn += _hebrewMonthLengthForYear(year, i);
     }
-    jdn += day - 1;
+    final len = _hebrewMonthLengthForYear(year, m);
+    jdn += day.clamp(1, len) - 1;
     return _jdnToGregorian(jdn);
   }
 

@@ -1077,8 +1077,11 @@ void _openHebrew(BuildContext context) {
       final gregorian = DateTimeService.hebrewToGregorian(hYear, hMonth, hDay);
 
       final monthIdx = hebrew['month']!;
+      final isLeap = (hebrew['isLeapYear'] ?? 0) == 1;
       final monthName = monthIdx < DateTimeService.hebrewMonthNames.length
-          ? DateTimeService.hebrewMonthNames[monthIdx]
+          ? (monthIdx == 6 && isLeap
+              ? 'Adar I'
+              : DateTimeService.hebrewMonthNames[monthIdx])
           : 'Month $monthIdx';
 
       return Column(

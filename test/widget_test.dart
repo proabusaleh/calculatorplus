@@ -4,7 +4,7 @@ import 'package:calculatorplus/main.dart';
 
 void main() {
   testWidgets('App smoke test', (WidgetTester tester) async {
-    await tester.pumpWidget(const CalculatorPlusApp());
+    await tester.pumpWidget(const HikmahCalculatorApp());
     expect(find.text('Calculator'), findsOneWidget);
   });
 }

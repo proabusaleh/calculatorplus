@@ -47,7 +47,7 @@ class UpdateService {
         uri,
         headers: {
           'Accept': 'application/vnd.github+json',
-          'User-Agent': 'CalculatorPlus/${AppInfo.version}',
+          'User-Agent': 'HikmahCalculator/${AppInfo.version}',
         },
       ).timeout(_timeout);
 

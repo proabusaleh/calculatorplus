@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../theme/app_theme.dart';
 
-/// Compact brand lockup: logo tile + "Calculator Plus" + PRO badge + subtitle.
+/// Compact brand lockup: logo tile + "Hikmah Calculator" + PRO badge + subtitle.
 class AppLogo extends StatelessWidget {
   final double size;
   final bool showSubtitle;
@@ -32,7 +32,7 @@ class AppLogo extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  'Calculator Plus',
+                  'Hikmah Calculator',
                   style: GoogleFonts.inter(
                     fontSize: size * 0.42,
                     fontWeight: FontWeight.w800,

@@ -425,7 +425,7 @@ class _ProSheet extends StatelessWidget {
           ),
           const SizedBox(height: 20),
           Text(
-            'Calculator Plus PRO',
+            'Hikmah Calculator PRO',
             style: GoogleFonts.inter(
               fontSize: 22,
               fontWeight: FontWeight.w800,

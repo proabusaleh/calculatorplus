@@ -1,8 +1,8 @@
 <div align="center">
 
-<img src="assets/images/logo.png" alt="Calculator Plus" width="120"/>
+<img src="assets/images/logo.png" alt="Hikmah Calculator" width="120"/>
 
-# Calculator Plus
+# Hikmah Calculator
 
 **A premium all-in-one scientific calculator with 100+ tools across physics, engineering, chemistry, mathematics, and more.**
 

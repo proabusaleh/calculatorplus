@@ -12,7 +12,6 @@ import '../services/haptic_service.dart';
 import '../services/app_info.dart';
 import '../widgets/display_prefs_sheet.dart';
 import '../widgets/button_layout_editor.dart';
-import '../widgets/profile_manager.dart';
 import '../widgets/memory_manager.dart';
 
 class SettingsScreen extends StatelessWidget {
@@ -31,11 +30,6 @@ class SettingsScreen extends StatelessWidget {
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
         children: [
-          // Profile section
-          _sectionHeader('Profile', AppTheme.accentGreen, isDark),
-          _ProfileCard(isDark: isDark),
-          const SizedBox(height: 24),
-
           // Theme section
           _sectionHeader('Appearance', AppTheme.primaryBlue, isDark),
           _ThemeCard(isDark: isDark),
@@ -96,43 +90,6 @@ class SettingsScreen extends StatelessWidget {
         ],
       ),
     );
-  }
-}
-
-// ═══════════════════════ Profile ═══════════════════════
-
-class _ProfileCard extends StatelessWidget {
-  final bool isDark;
-  const _ProfileCard({required this.isDark});
-
-  @override
-  Widget build(BuildContext context) {
-    final settings = Provider.of<SettingsProvider>(context);
-    final profile = settings.activeProfile;
-
-    final iconData = profile.icon == 'work'
-        ? Icons.work_rounded
-        : profile.icon == 'school'
-            ? Icons.school_rounded
-            : profile.icon == 'home'
-                ? Icons.home_rounded
-                : Icons.person_rounded;
-
-    return _card(isDark, [
-      _SettingTile(
-        icon: iconData,
-        iconColor: AppTheme.accentGreen,
-        title: profile.name,
-        subtitle: '${settings.profiles.length} profiles available',
-        trailing: Icon(Icons.chevron_right_rounded,
-            size: 20, color: isDark ? Colors.white38 : Colors.black26),
-        onTap: () => showModalBottomSheet(
-          context: context,
-          backgroundColor: Colors.transparent,
-          builder: (_) => ProfileManagerWidget(settings: settings),
-        ),
-      ),
-    ]);
   }
 }
 

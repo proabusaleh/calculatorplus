@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
-import '../models/calculator_state.dart';
 import '../providers/calculator_provider.dart';
 import '../services/haptic_service.dart';
 import '../services/update_service.dart';
@@ -23,13 +22,47 @@ class AppShell extends StatefulWidget {
   State<AppShell> createState() => _AppShellState();
 }
 
-class _AppShellState extends State<AppShell> {
+class _AppShellState extends State<AppShell>
+    with SingleTickerProviderStateMixin {
   int _index = 0;
+
+  /// Entrance animation replayed every time a tab is opened
+  /// (including the calculator) and once on app launch.
+  late final AnimationController _tabAnimCtrl;
+  late final Animation<double> _tabFade;
+  late final Animation<Offset> _tabSlide;
 
   @override
   void initState() {
     super.initState();
+    _tabAnimCtrl = AnimationController(
+      duration: const Duration(milliseconds: 300),
+      vsync: this,
+    );
+    _tabFade = Tween<double>(begin: 0.35, end: 1.0).animate(
+      CurvedAnimation(parent: _tabAnimCtrl, curve: Curves.easeOutCubic),
+    );
+    _tabSlide =
+        Tween<Offset>(begin: const Offset(0, 0.045), end: Offset.zero).animate(
+      CurvedAnimation(parent: _tabAnimCtrl, curve: Curves.easeOutCubic),
+    );
     _checkForUpdate();
+    // Animate the first screen in on app launch (after splash).
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _tabAnimCtrl.forward();
+    });
+  }
+
+  @override
+  void dispose() {
+    _tabAnimCtrl.dispose();
+    super.dispose();
+  }
+
+  /// Switches tab with a slide + fade entrance animation.
+  void _animateTo(int index) {
+    setState(() => _index = index);
+    _tabAnimCtrl.forward(from: 0);
   }
 
   Future<void> _checkForUpdate() async {
@@ -41,25 +74,54 @@ class _AppShellState extends State<AppShell> {
   void _switchTab(int index) {
     if (index == _index) return;
     HapticService.selectionClick();
-    setState(() => _index = index);
+    _animateTo(index);
   }
+
+  /// Opens the calculator with a Hero zoom from the Home card.
+  ///
+  /// The Home preview display flies into the live display panel while the
+  /// page scales up — then Back reverses the whole choreography.
+  bool _pushingCalculator = false;
 
   void _openCalculator([int mode = 0]) {
     HapticService.lightImpact();
-    Provider.of<CalculatorProvider>(context, listen: false).setMode(
-      mode == 1 ? CalculatorMode.scientific : CalculatorMode.basic,
-    );
-    setState(() => _index = AppTab.calculator.index);
+    if (_pushingCalculator) return;
+    _pushingCalculator = true;
+    Navigator.of(context)
+        .push(
+      PageRouteBuilder(
+        pageBuilder: (_, __, ___) => CalculatorScreen(
+          initialMode: mode,
+          heroDisplay: true,
+        ),
+        transitionsBuilder: (_, anim, __, child) {
+          final curved =
+              CurvedAnimation(parent: anim, curve: Curves.easeOutCubic);
+          return FadeTransition(
+            opacity: curved,
+            child: ScaleTransition(
+              scale: Tween<double>(begin: 0.86, end: 1.0).animate(curved),
+              child: child,
+            ),
+          );
+        },
+        transitionDuration: const Duration(milliseconds: 450),
+        reverseTransitionDuration: const Duration(milliseconds: 350),
+      ),
+    )
+        .then((_) {
+      _pushingCalculator = false;
+    });
   }
 
   void _openTools() {
     HapticService.selectionClick();
-    setState(() => _index = AppTab.tools.index);
+    _animateTo(AppTab.tools.index);
   }
 
   void _openHistory() {
     HapticService.selectionClick();
-    setState(() => _index = AppTab.history.index);
+    _animateTo(AppTab.history.index);
   }
 
   @override
@@ -68,26 +130,32 @@ class _AppShellState extends State<AppShell> {
       body: Column(
         children: [
           Expanded(
-            child: IndexedStack(
-              index: _index,
-              children: [
-                HomeScreen(
-                  onOpenCalculator: _openCalculator,
-                  onOpenTools: _openTools,
-                  onOpenHistory: _openHistory,
+            child: FadeTransition(
+              opacity: _tabFade,
+              child: SlideTransition(
+                position: _tabSlide,
+                child: IndexedStack(
+                  index: _index,
+                  children: [
+                    HomeScreen(
+                      onOpenCalculator: _openCalculator,
+                      onOpenTools: _openTools,
+                      onOpenHistory: _openHistory,
+                    ),
+                    const CalculatorScreen(embedded: true),
+                    const ToolsScreen(),
+                    HistoryScreen(
+                      embedded: true,
+                      onRecalculate: (calc) {
+                        Provider.of<CalculatorProvider>(context, listen: false)
+                            .reuseCalculation(calc);
+                        _animateTo(AppTab.calculator.index);
+                      },
+                    ),
+                    const FavoritesScreen(),
+                  ],
                 ),
-                const CalculatorScreen(embedded: true),
-                const ToolsScreen(),
-                HistoryScreen(
-                  embedded: true,
-                  onRecalculate: (calc) {
-                    Provider.of<CalculatorProvider>(context, listen: false)
-                        .reuseCalculation(calc);
-                    setState(() => _index = AppTab.calculator.index);
-                  },
-                ),
-                const FavoritesScreen(),
-              ],
+              ),
             ),
           ),
           _FloatingNav(

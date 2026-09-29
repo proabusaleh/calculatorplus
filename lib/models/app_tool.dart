@@ -14,7 +14,7 @@ import '../screens/date_time_screen.dart';
 import '../screens/constants_screen.dart';
 import '../screens/calculator_screen.dart';
 
-/// A single entry in the Calculator Plus tool library.
+/// A single entry in the Hikmah Calculator tool library.
 class AppTool {
   final String id;
   final String title;

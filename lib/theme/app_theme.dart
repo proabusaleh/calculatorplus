@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-/// Central design system for Calculator Plus.
+/// Central design system for Hikmah Calculator.
 ///
 /// Dark mode is the primary theme. The palette follows a premium,
 /// blue-to-purple identity with restrained accent colors used only for
