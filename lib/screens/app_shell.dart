@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
@@ -31,6 +33,7 @@ class _AppShellState extends State<AppShell>
   late final AnimationController _tabAnimCtrl;
   late final Animation<double> _tabFade;
   late final Animation<Offset> _tabSlide;
+  Timer? _updateTimer;
 
   @override
   void initState() {
@@ -57,6 +60,7 @@ class _AppShellState extends State<AppShell>
 
   @override
   void dispose() {
+    _updateTimer?.cancel();
     _tabAnimCtrl.dispose();
     super.dispose();
   }
@@ -69,10 +73,14 @@ class _AppShellState extends State<AppShell>
 
   Future<void> _checkForUpdate() async {
     // Small delay lets the shell settle before popping a dialog.
-    await Future.delayed(const Duration(seconds: 2));
-    final info = await UpdateService.checkForUpdate();
-    if (!mounted) return;
-    UpdateDialog.maybeShow(context, info);
+    // Cancellable timer so widget tests never see a pending Timer.
+    _updateTimer?.cancel();
+    _updateTimer = Timer(const Duration(seconds: 2), () async {
+      if (!mounted) return;
+      final info = await UpdateService.checkForUpdate();
+      if (!mounted) return;
+      UpdateDialog.maybeShow(context, info);
+    });
   }
 
   void _switchTab(int index) {

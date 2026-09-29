@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math' as math;
 import 'dart:ui';
 import 'package:flutter/material.dart';
@@ -38,6 +39,8 @@ class _SplashScreenState extends State<SplashScreen>
   late Animation<double> _textSlide;
   late Animation<double> _textFade;
   late Animation<double> _loadFade;
+
+  final List<Timer> _timers = [];
 
   @override
   void initState() {
@@ -104,46 +107,64 @@ class _SplashScreenState extends State<SplashScreen>
     );
   }
 
-  void _startSequence() async {
-    await Future.delayed(const Duration(milliseconds: 200));
-    if (!mounted) return;
-    _logoCtrl.forward();
+  void _startSequence() {
+    // Cancellable timers so widget tests (and fast dispose) never leave
+    // pending Future.delayed timers behind.
+    _delay(const Duration(milliseconds: 200), () {
+      if (!mounted) return;
+      _logoCtrl.forward();
 
-    await Future.delayed(const Duration(milliseconds: 550));
-    if (!mounted) return;
-    _textCtrl.forward();
-    _ringCtrl.repeat();
-    _floatCtrl.repeat(reverse: true);
+      _delay(const Duration(milliseconds: 550), () {
+        if (!mounted) return;
+        _textCtrl.forward();
+        _ringCtrl.repeat();
+        _floatCtrl.repeat(reverse: true);
 
-    await Future.delayed(const Duration(milliseconds: 450));
-    if (!mounted) return;
-    _loadCtrl.forward();
-    _spinCtrl.repeat();
+        _delay(const Duration(milliseconds: 450), () {
+          if (!mounted) return;
+          _loadCtrl.forward();
+          _spinCtrl.repeat();
 
-    await Future.delayed(const Duration(milliseconds: 2400));
-    if (!mounted) return;
+          _delay(const Duration(milliseconds: 2400), () {
+            if (!mounted) return;
 
-    Navigator.of(context).pushReplacement(
-      PageRouteBuilder(
-        pageBuilder: (_, __, ___) => const AppShell(),
-        transitionsBuilder: (_, anim, __, child) {
-          return FadeTransition(
-            opacity: anim,
-            child: ScaleTransition(
-              scale: Tween<double>(begin: 0.96, end: 1.0).animate(
-                CurvedAnimation(parent: anim, curve: Curves.easeOutCubic),
+            Navigator.of(context).pushReplacement(
+              PageRouteBuilder(
+                pageBuilder: (_, __, ___) => const AppShell(),
+                transitionsBuilder: (_, anim, __, child) {
+                  return FadeTransition(
+                    opacity: anim,
+                    child: ScaleTransition(
+                      scale: Tween<double>(begin: 0.96, end: 1.0).animate(
+                        CurvedAnimation(parent: anim, curve: Curves.easeOutCubic),
+                      ),
+                      child: child,
+                    ),
+                  );
+                },
+                transitionDuration: const Duration(milliseconds: 600),
               ),
-              child: child,
-            ),
-          );
-        },
-        transitionDuration: const Duration(milliseconds: 600),
-      ),
-    );
+            );
+          });
+        });
+      });
+    });
+  }
+
+  void _delay(Duration duration, void Function() callback) {
+    final timer = Timer(duration, () {
+      if (!mounted) return;
+      callback();
+    });
+    _timers.add(timer);
   }
 
   @override
   void dispose() {
+    for (final t in _timers) {
+      t.cancel();
+    }
+    _timers.clear();
     _logoCtrl.dispose();
     _textCtrl.dispose();
     _loadCtrl.dispose();
