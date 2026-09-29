@@ -57,7 +57,7 @@ class UpdateService {
 
       final json = jsonDecode(response.body) as Map<String, dynamic>;
       final tagName = (json['tag_name'] as String? ?? '').trim();
-      final latestVersion = tagName.replaceFirst(RegExp(r'^v'), '');
+      final latestVersion = normalizeVersion(tagName);
       final releaseNotes = (json['body'] as String? ?? '').trim();
       final htmlUrl = (json['html_url'] as String? ?? repoUrl);
 
@@ -74,9 +74,10 @@ class UpdateService {
         }
       }
 
+      final currentVersion = normalizeVersion(AppInfo.version);
       final hasUpdate = latestVersion.isNotEmpty &&
-          latestVersion != AppInfo.version &&
-          _compareVersions(latestVersion, AppInfo.version) > 0;
+          currentVersion.isNotEmpty &&
+          _compareVersions(latestVersion, currentVersion) > 0;
 
       return UpdateInfo(
         latestVersion: latestVersion,
@@ -98,16 +99,39 @@ class UpdateService {
         hasUpdate: false,
       );
 
+  /// Strips a leading `v`, `+build` metadata and `-pre` suffixes so tags
+  /// like `v2.0.3+4` compare correctly against `2.0.3`.
+  static String normalizeVersion(String raw) {
+    var v = raw.trim();
+    v = v.replaceFirst(RegExp(r'^[vV]'), '');
+    // Drop build metadata (+4) — it does not affect precedence here.
+    final plus = v.indexOf('+');
+    if (plus >= 0) v = v.substring(0, plus);
+    // Drop pre-release suffix (-beta.1) for the numeric comparison.
+    final dash = v.indexOf('-');
+    if (dash >= 0) v = v.substring(0, dash);
+    return v.trim();
+  }
+
   /// Compares two dotted version strings.
   /// Returns >0 if [a] is newer than [b], 0 if equal, <0 otherwise.
+  static int compareVersions(String a, String b) =>
+      _compareVersions(normalizeVersion(a), normalizeVersion(b));
+
   static int _compareVersions(String a, String b) {
-    final aParts = a.split('.').map(int.tryParse).toList();
-    final bParts = b.split('.').map(int.tryParse).toList();
+    int parsePart(String part) {
+      // Tolerate non-numeric leftovers (e.g. "3beta" -> 3).
+      final match = RegExp(r'^\d+').firstMatch(part.trim());
+      return match == null ? 0 : int.parse(match.group(0)!);
+    }
+
+    final aParts = a.split('.').map(parsePart).toList();
+    final bParts = b.split('.').map(parsePart).toList();
 
     final len = aParts.length > bParts.length ? aParts.length : bParts.length;
     for (var i = 0; i < len; i++) {
-      final av = i < aParts.length ? (aParts[i] ?? 0) : 0;
-      final bv = i < bParts.length ? (bParts[i] ?? 0) : 0;
+      final av = i < aParts.length ? aParts[i] : 0;
+      final bv = i < bParts.length ? bParts[i] : 0;
       if (av != bv) return av - bv;
     }
     return 0;

@@ -46,10 +46,12 @@ class _AppShellState extends State<AppShell>
         Tween<Offset>(begin: const Offset(0, 0.045), end: Offset.zero).animate(
       CurvedAnimation(parent: _tabAnimCtrl, curve: Curves.easeOutCubic),
     );
-    _checkForUpdate();
     // Animate the first screen in on app launch (after splash).
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) _tabAnimCtrl.forward();
+      // Defer the update prompt until the first frame is laid out so
+      // showDialog has a valid Navigator context.
+      _checkForUpdate();
     });
   }
 
@@ -66,6 +68,8 @@ class _AppShellState extends State<AppShell>
   }
 
   Future<void> _checkForUpdate() async {
+    // Small delay lets the shell settle before popping a dialog.
+    await Future.delayed(const Duration(seconds: 2));
     final info = await UpdateService.checkForUpdate();
     if (!mounted) return;
     UpdateDialog.maybeShow(context, info);
